@@ -1,5 +1,5 @@
 import numpy as np
-from numba import njit, prange, types
+from numba import njit, types
 from numba import f8, i8, b1
 from .value_func import *
 from ..tools import find_nearest_idx
