@@ -1,7 +1,7 @@
 import numpy as np
 from numba import njit, types
 from numba import f8, i8
-from .utility_fuc import *
+from ..utility_fuc import *
 
 @njit(types.Tuple((f8, i8))(f8, f8, f8[:], f8, f8, f8[:], f8, f8, f8, f8, f8, f8,
                           f8[:], f8[:], f8[:,:,:]))

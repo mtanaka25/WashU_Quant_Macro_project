@@ -1,6 +1,6 @@
 from .default_params import *
 from .FixedHousePrice import FixedHousePrice
-from .value_func_iter_ARM import value_func_iter
+from .simplest_spec.value_func_iter_ARM import value_func_iter
 from .tools import StopWatch
 
 class ARM_FixedHousePrice(FixedHousePrice):

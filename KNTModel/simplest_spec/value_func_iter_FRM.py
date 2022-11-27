@@ -1,8 +1,8 @@
 import numpy as np
-from numba import njit, types
+from numba import njit, prange, types
 from numba import f8, i8, b1
-from .value_func_simple_spec import *
-from .tools import find_nearest_idx
+from .value_func import *
+from ..tools import find_nearest_idx
 
 @njit(types.Tuple((f8[:,:,:], f8[:,:,:], f8[:,:,:], f8[:,:,:], f8[:,:,:], i8[:,:,:], i8[:,:,:], i8[:,:,:], b1))
       (f8[:], f8[:,:], f8[:], f8[:,:], f8[:], f8, f8, f8, f8, f8, f8, f8, f8, f8,
@@ -17,6 +17,8 @@ def value_func_iter(z_grid, trans_prob_z, x_grid, trans_prob_x, a_grid,
     VH_init  = np.zeros((N_a, N_z, N_x))
     VN_init  = np.zeros((N_a, N_z, N_x))
     rm_init = np.ones((N_a, N_z, N_x)) * 1.1 * r
+    # homeowners' transition matrix for x
+    trans_prob_x_H = np.eye(N_x)
     # Prepare arrays to save intermediate values
     V_HR_t, V_HD_t = np.zeros((N_a, N_z, N_x)), np.zeros((N_a, N_z, N_x))
     V_NP_t, V_NN_t = np.zeros((N_a, N_z, N_x)), np.zeros((N_a, N_z, N_x))
@@ -41,7 +43,7 @@ def value_func_iter(z_grid, trans_prob_z, x_grid, trans_prob_x, a_grid,
                              h = h_star, ph = ph, rm = rm_t[:, z_idx, x_idx],
                              r = r, beta = beta, alpha = alpha, sigma = sigma,
                              gamma = gamma, d = d, trans_prob_z_vec = trans_prob_z[z_idx, :],
-                             trans_prob_x_vec = trans_prob_x[x_idx, :],
+                             trans_prob_x_vec = trans_prob_x_H[x_idx, :],
                              V_H_prime = VH_tp1)
                     V_HD_t[a_idx, z_idx, x_idx] = \
                         V_HD(z = z, h = h_eps, c_d = c_d, beta = beta,
@@ -62,7 +64,7 @@ def value_func_iter(z_grid, trans_prob_z, x_grid, trans_prob_x, a_grid,
                              h = h_eps, r = r, beta = beta, alpha = alpha,
                              sigma = sigma, gamma = gamma,
                              trans_prob_z_vec = trans_prob_z[z_idx, :],
-                             trans_prob_x_vec = trans_prob_x[x_idx, :],
+                             trans_prob_x_vec = trans_prob_x_H[x_idx, :],
                              V_N_prime = VN_tp1)
         # Expected value for homeowners (considering the Gumbel disturbance)
         VH_t = V_H(V_HR_t, V_HD_t, kappa)
@@ -73,8 +75,8 @@ def value_func_iter(z_grid, trans_prob_z, x_grid, trans_prob_x, a_grid,
         # Purchase probabilities for non-homeowners (considering the Gumbel disturbance)
         P_prob = purchase_prob(V_NP_t, V_NN_t, kappa)
         # Calculate the mortgage rate in the previous period
-        for a_idx, _ in enumerate(a_grid):
-            for z_idx, _ in enumerate(z_grid):
+        for a_idx in range(N_a):
+            for z_idx in range(N_z):
                 for x_idx, x in enumerate(x_grid):
                     rm_tm1[a_idx, z_idx, x_idx] = \
                         mortgage_rate(a_prime_idx = a_idx,
@@ -84,7 +86,7 @@ def value_func_iter(z_grid, trans_prob_z, x_grid, trans_prob_x, a_grid,
                                       r = r,
                                       theta = theta,
                                       trans_prob_z = trans_prob_z,
-                                      trans_prob_x = trans_prob_x,
+                                      trans_prob_x = trans_prob_x_H,
                                       default_prob_array = D_prob)
         # Convergence check
         diff_VH = max(np.abs((VH_tp1 - VH_t).flatten()))
