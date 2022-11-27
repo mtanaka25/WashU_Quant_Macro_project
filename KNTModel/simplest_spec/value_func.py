@@ -168,4 +168,4 @@ def mortgage_rate(a_prime_idx, z_idx, x_idx, x, r, theta,
                 * trans_prob_x[x_idx, x_prime_idx]
                 * default_prob_array[a_prime_idx, z_prime_idx, x_prime_idx]
             )
-    return (1 + r - theta * default_prob)/(1 - default_prob) * x - 1
+    return (x * (1 + r) - theta * default_prob)/(1 - default_prob) - 1
