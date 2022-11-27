@@ -154,7 +154,7 @@ def default_prob(V_HR, V_HD, kappa):
 
 @njit(f8[:,:,:](f8[:,:,:], f8[:,:,:], f8))
 def purchase_prob(V_NP, V_NN, kappa):
-    return 1 / (1 + np.exp((V_NP - V_NN)/kappa))
+    return np.exp((V_NP - V_NN)/kappa) / (1 + np.exp((V_NP - V_NN)/kappa))
 
 @njit(f8(i8, i8, i8, f8, f8, f8, f8[:,:], f8[:,:], f8[:,:,:]))
 def mortgage_rate(a_prime_idx, z_idx, x_idx, x, r, theta,
