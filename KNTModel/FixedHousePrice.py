@@ -3,7 +3,9 @@ from .tools import StopWatch, find_nearest_idx, multiple_line_plot
 from .simplest_spec import get_stationary_dist
 from .default_params import max_iter_def, tol_def
 import numpy as np
-
+import matplotlib.pyplot as plt
+import seaborn as sns
+sns.set()
 
 class FixedHousePrice(KNTModel):
     def __init__(self, z_grid, trans_prob_z, x_grid, trans_prob_x,
@@ -191,7 +193,7 @@ class FixedHousePrice(KNTModel):
         # Plot the data
         multiple_line_plot(x, data2plot*100,
                            x_label = xlabel, y_label = 'default prob(%)',
-                           ylim = [0., 100.],
+                           ylim = [-0.5, 100.5],
                            labels = labels,
                            savefig = savefig, fname = fname)
     
@@ -234,6 +236,20 @@ class FixedHousePrice(KNTModel):
         # Plot the data
         multiple_line_plot(x, data2plot*100,
                            x_label = xlabel, y_label = 'prob of buying house(%)',
-                           ylim = [0., 100.],
+                           ylim = [-0.5, 100.5],
                            labels = labels,
                            savefig = savefig, fname = fname)
+        
+    def plot_homeownership(self,
+                            savefig = True,
+                            fname = 'houseownership.png'
+                            ):
+        data = [np.sum(self.density_H), np.sum(self.density_N)]
+        label = ['Homeowners', 'Non-homeowners']
+        fig, ax = plt.subplots(1, 1, figsize=(8, 6))
+        ax.bar(label, data, width=0.618)
+        if savefig:
+            plt.savefig(fname, dpi = 100, bbox_inches='tight', pad_inches=0)
+        else:
+            plt.show()
+
