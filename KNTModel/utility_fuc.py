@@ -10,5 +10,4 @@ def utility(c, h, alpha, sigma, gamma):
 
 @njit(f8(f8, f8, f8, f8, f8, f8))
 def cons(z, a, r, a_prime, down_pay=0., mortgage_pay=0.):
-    c = z + (1 + r)*a - a_prime - down_pay - mortgage_pay
-    return max([c, 1E-5])
+    return z + (1 + r)*a - a_prime - down_pay - mortgage_pay

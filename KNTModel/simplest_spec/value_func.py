@@ -16,6 +16,8 @@ def V_HR(z, a, a_prime_vec, h, ph, rm, r, beta, alpha, sigma, gamma, d,
             joint_trans_prob[z_idx, x_idx] = prob_z * prob_x
     # prepare an array to temporarily store the possible values
     possible_values = np.zeros((len(a_prime_vec), ))
+    # flag indicating consumption cannot be positive
+    flag = False
     # calculate value for each possible a_prime
     for a_prime_idx, a_prime in enumerate(a_prime_vec):
         # mortgage payment
@@ -27,19 +29,35 @@ def V_HR(z, a, a_prime_vec, h, ph, rm, r, beta, alpha, sigma, gamma, d,
                  a_prime = a_prime,
                  down_pay = 0.,
                  mortgage_pay = mortgage)
-        # flow utility
-        flow_u = utility(c = c,
-                         h = h,
-                         alpha = alpha,
-                         sigma = sigma,
-                         gamma = gamma)
+        if c <= 0:
+            # if c is negative, give penalty
+            flow_u = utility(c = 1E-5,
+                             h = 1E-5,
+                             alpha = alpha,
+                             sigma = sigma,
+                             gamma = gamma)
+            if a_prime_idx == 0:
+                # if c is negative with smallest a', stop calculation
+                flag = True
+                break
+        else:
+            # flow utility
+            flow_u = utility(c = c,
+                             h = h,
+                             alpha = alpha,
+                             sigma = sigma,
+                             gamma = gamma)
         # expected value
         expected_u = joint_trans_prob * V_H_prime[a_prime_idx, :, :]
         expected_u = np.sum(expected_u)
         # store the value of choosing the specific a_prime
         possible_values[a_prime_idx] = flow_u + beta * expected_u
-    # return max and argmax
-    return max(possible_values), np.argmax(possible_values)
+    if flag:
+        # if c is always negative, give penalty value. In that case, argmax is zero.
+        return flow_u, 0
+    else:
+        # return max and argmax
+        return max(possible_values), np.argmax(possible_values)
 
 @njit(f8(f8, f8, f8, f8, f8, f8, f8, f8[:], f8[:], f8[:,:]))
 def V_HD(z, h, c_d, beta, alpha, sigma, gamma,
@@ -81,6 +99,8 @@ def V_NP(z, a, a_prime_vec, h, ph, r, beta, alpha, sigma, gamma, d,
     down_pay = d * ph * h
     # prepare an array to temporarily store the possible values
     possible_values = np.zeros((len(a_prime_vec), ))
+    # flag indicating consumption cannot be positive
+    flag = False
     # calculate value for each possible a_prime
     for a_prime_idx, a_prime in enumerate(a_prime_vec):
         # calculate the consumption as the residual of budget constraint
@@ -90,19 +110,35 @@ def V_NP(z, a, a_prime_vec, h, ph, r, beta, alpha, sigma, gamma, d,
                  a_prime = a_prime,
                  down_pay = down_pay,
                  mortgage_pay = 0.)
-        # flow utility
-        flow_u = utility(c = c,
-                         h = h,
-                         alpha = alpha,
-                         sigma = sigma,
-                         gamma = gamma)
+        if c <= 0:
+            # if c is negative, give penalty
+            flow_u = utility(c = 1E-5,
+                             h = 1E-5,
+                             alpha = alpha,
+                             sigma = sigma,
+                             gamma = gamma)
+            if a_prime_idx == 0:
+                # if c is negative with smallest a', stop calculation
+                flag = True
+                break
+        else:
+            # flow utility
+            flow_u = utility(c = c,
+                             h = h,
+                             alpha = alpha,
+                             sigma = sigma,
+                             gamma = gamma)
         # expected value
         expected_u = joint_trans_prob * V_H_prime[a_prime_idx, :, :]
         expected_u = np.sum(expected_u)
         # store the value of choosing the specific a_prime
         possible_values[a_prime_idx] = flow_u + beta * expected_u
-    # return max and argmax
-    return max(possible_values), np.argmax(possible_values)
+    if flag:
+        # if c is always negative, give penalty value. In that case, argmax is zero.
+        return flow_u, 0
+    else:
+        # return max and argmax
+        return max(possible_values), np.argmax(possible_values)
 
 @njit(types.Tuple((f8, i8))(f8, f8, f8[:], f8, f8, f8, f8, f8, f8,
                           f8[:], f8[:], f8[:,:,:]))
@@ -117,6 +153,8 @@ def V_NN(z, a, a_prime_vec, h, r, beta, alpha, sigma, gamma,
             joint_trans_prob[z_idx, x_idx] = prob_z * prob_x
     # prepare an array to temporarily store the possible values
     possible_values = np.zeros((len(a_prime_vec), ))
+    # flag indicating consumption cannot be positive
+    flag = False
     # calculate value for each possible a_prime
     for a_prime_idx, a_prime in enumerate(a_prime_vec):
         # calculate the consumption as the residual of budget constraint
@@ -126,19 +164,35 @@ def V_NN(z, a, a_prime_vec, h, r, beta, alpha, sigma, gamma,
                  a_prime = a_prime,
                  down_pay = 0.,
                  mortgage_pay = 0.)
-        # flow utility
-        flow_u = utility(c = c,
-                         h = h,
-                         alpha = alpha,
-                         sigma = sigma,
-                         gamma = gamma)
+        if c <= 0:
+            # if c is negative, give penalty
+            flow_u = utility(c = 1E-5,
+                             h = 1E-5,
+                             alpha = alpha,
+                             sigma = sigma,
+                             gamma = gamma)
+            if a_prime_idx == 0:
+                # if c is negative with smallest a', stop calculation
+                flag = True
+                break
+        else:
+            # flow utility
+            flow_u = utility(c = c,
+                             h = h,
+                             alpha = alpha,
+                             sigma = sigma,
+                             gamma = gamma)
         # expected value
         expected_u = joint_trans_prob * V_N_prime[a_prime_idx, :, :]
         expected_u = np.sum(expected_u)
         # store the value of choosing the specific a_prime
         possible_values[a_prime_idx] = flow_u + beta * expected_u
-    # return max and argmax
-    return max(possible_values), np.argmax(possible_values)
+    if flag:
+        # if c is always negative, give penalty value. In that case, argmax is zero.
+        return flow_u, 0
+    else:
+        # return max and argmax
+        return max(possible_values), np.argmax(possible_values)
 
 @njit(f8[:,:,:](f8[:,:,:], f8[:,:,:], f8))
 def V_H(V_HR, V_HD, kappa):
