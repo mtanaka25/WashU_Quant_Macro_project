@@ -1,6 +1,8 @@
 from .KNTModel import *
 from .tools import StopWatch, find_nearest_idx, multiple_line_plot, plot_distribution
-from .simplest_spec import get_stationary_dist, get_stationary_dist_conditional_on_x
+from .simplest_spec import get_stationary_dist_by_iter, get_distribution_under_specific_x
+from .simplest_spec import get_joint_transition_matrix, get_stationary_dist_by_eig
+from .simplest_spec import convert_flatten_dist_to_array
 from .default_params import max_iter_def, tol_def
 import numpy as np
 import matplotlib.pyplot as plt
@@ -32,15 +34,15 @@ class FixedHousePrice(KNTModel):
                          N_a = N_a)
         self.ph = ph
     
-    def get_stationary_dist_conditional_on_x(self,
+    def get_dist_under_specific_x(self,
                                              fixed_x = 1.,
                                              max_iter = max_iter_def,
                                              tol = tol_def):
         x1_idx = find_nearest_idx(fixed_x, self.x_grid)
-        print(f'Starting to calculate the stationary distribution (under x = {fixed_x})...',
+        print(f'Starting to calculate the distribution under x = {fixed_x}...',
               flush = True)
         stopwatch = StopWatch()
-        result = get_stationary_dist_conditional_on_x(
+        result = get_distribution_under_specific_x(
             trans_prob_z = self.trans_prob_z,
             default_prob = self.probD[:, :, x1_idx],
             purchase_prob = self.probP[:, :, x1_idx],
@@ -56,29 +58,83 @@ class FixedHousePrice(KNTModel):
         # Unpack and store the result
         self.conditional_density_H, self.conditional_density_N, _ = result
     
-    def get_stationary_dist(self,
-                            max_iter = max_iter_def,
-                            tol = tol_def):
-        x1_idx = find_nearest_idx(1., self.x_grid)
+    def get_stationary_dist_by_iter(self,
+                                    max_iter = max_iter_def,
+                                    tol = tol_def):
         print('Starting to calculate the stationary distribution...',
               flush = True)
         stopwatch = StopWatch()
-        result = get_stationary_dist(trans_prob_z = self.trans_prob_z,
-                                     trans_prob_x = self.trans_prob_x,
-                                     default_prob = self.probD,
-                                     purchase_prob = self.probP,
-                                     a_star_H_idx = self.a_star_H_idx,
-                                     a_star_NP_idx = self.a_star_NP_idx,
-                                     a_star_NN_idx = self.a_star_NN_idx,
-                                     a_grid = self.a_grid,
-                                     max_iter = max_iter,
-                                     tol = tol)
+        result = get_stationary_dist_by_iter(
+            trans_prob_z = self.trans_prob_z,
+            trans_prob_x = self.trans_prob_x,
+            default_prob = self.probD,
+            purchase_prob = self.probP,
+            a_star_H_idx = self.a_star_H_idx,
+            a_star_NP_idx = self.a_star_NP_idx,
+            a_star_NN_idx = self.a_star_NN_idx,
+            a_grid = self.a_grid,
+            max_iter = max_iter,
+            tol = tol)
         stopwatch.stop()
         if result[-1]==True:
             print('Failed to obtain the stationary distribution. Try again with more max_iter.')
         # Unpack and store the result
         self.density_H, self.density_N, _ = result
     
+    def get_stationary_dist_by_eig(self,
+                                   tol = 1E-5):
+        stopwatch = StopWatch()
+        trans_mat = get_joint_transition_matrix(
+            trans_prob_z = self.trans_prob_z,
+            trans_prob_x = self.trans_prob_x,
+            default_prob = self.probD,
+            purchase_prob = self.probP,
+            a_star_H_idx = self.a_star_H_idx,
+            a_star_NP_idx = self.a_star_NP_idx,
+            a_star_NN_idx = self.a_star_NN_idx,
+            a_grid = self.a_grid,
+            )
+        dist, eigs, count = get_stationary_dist_by_eig(trans_mat, tol)
+        if count == 1:
+            popH, popN = convert_flatten_dist_to_array(
+                dist, N_a = self.N_a, N_z = self.N_z, N_x = self.N_x)
+            self.density_H, self.density_N = popH, popN
+        else:
+            for i in range(count):
+                popH, popN = convert_flatten_dist_to_array(
+                    dist[:, i], N_a = self.N_a, N_z = self.N_z, N_x = self.N_x)
+                self.__dict__[f'density_H_{i+1}'] = popH
+                self.__dict__[f'density_N_{i+1}'] = popN
+        stopwatch.stop()
+        self.joint_transition_mat = trans_mat
+        self.eigenvalues = eigs
+    
+    # def get_stationary_dist_by_eig_test(self,
+    #                                     max_iter = 1000,
+    #                                     tol = 1E-5):
+    #     stopwatch = StopWatch()
+    #     trans_mat = get_joint_transition_matrix(
+    #         trans_prob_z = self.trans_prob_z,
+    #         trans_prob_x = self.trans_prob_x,
+    #         default_prob = self.probD,
+    #         purchase_prob = self.probP,
+    #         a_star_H_idx = self.a_star_H_idx,
+    #         a_star_NP_idx = self.a_star_NP_idx,
+    #         a_star_NN_idx = self.a_star_NN_idx,
+    #         a_grid = self.a_grid,
+    #         )
+    #     pop_N = np.ones((1, trans_mat.shape[0]))
+    #     pop_N = pop_N/np.sum(pop_N)
+    #     # initialize the while loop
+    #     diff, iteration = tol +1., 0
+    #     while (iteration < max_iter) & (diff > tol):
+    #         pop_N_old = np.copy(pop_N)
+    #         pop_N = pop_N_old @ trans_mat
+    #         diff = np.max(np.abs(pop_N - pop_N_old))
+    #         print(np.sum(pop_N))
+    #     if diff > tol:
+    #         print('Failed to obtain the stationary distribution. Try again with more max_iter.')
+
     def plot_value_func(self,
                         homeownership = 'H',
                         axis = 0,
@@ -324,6 +380,7 @@ class FixedHousePrice(KNTModel):
     
     def plot_stationary_distribution(self,
                                      homeownership = 'H',
+                                     density_name = None,
                                      fixed_axis = 2,
                                      fixed_state_id = 0,
                                      savefig = True,
@@ -336,6 +393,9 @@ class FixedHousePrice(KNTModel):
         else:
             density = self.density_N
             title = 'Non-Homeowners'
+        if type(density_name) != type(None):
+            density = self.__dict__[density_name]
+            title = density_name
         if fixed_axis == 0:
             density2plot = density[fixed_state_id, :, :]
             x, y = self.z_grid, self.x_grid

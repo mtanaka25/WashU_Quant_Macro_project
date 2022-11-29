@@ -6,24 +6,24 @@ from ..tools import find_nearest_idx
 @njit(types.Tuple((f8[:, :], f8[:, :], b1))
       (f8[:,:], f8[:,:], f8[:,:],
        i8[:,:], i8[:,:], i8[:,:], f8[:], i8, f8))
-def get_stationary_dist_conditional_on_x(trans_prob_z,
-                                         default_prob,
-                                         purchase_prob,
-                                         a_star_H_idx,
-                                         a_star_NP_idx,
-                                         a_star_NN_idx,
-                                         a_grid,
-                                         max_iter,
-                                         tol):
+def get_distribution_under_specific_x(trans_prob_z,
+                                      default_prob,
+                                      purchase_prob,
+                                      a_star_H_idx,
+                                      a_star_NP_idx,
+                                      a_star_NN_idx,
+                                      a_grid,
+                                      max_iter,
+                                      tol):
     # The following is pure computational stuff (for efficient usage of memory)
     trans_prob_z =  np.ascontiguousarray(trans_prob_z)
     # Get the number of grid points
-    N_z = trans_prob_z.shape[0]
     N_a = default_prob.shape[0]
+    N_z = trans_prob_z.shape[0]
     # find the index satsfying a=0
     a0_idx = find_nearest_idx(0, a_grid)
     # initialize the distribution (start with uniform)
-    each_density = 1/ (N_z *  N_a * 2)
+    each_density = 1/ (2 * N_a * N_z)
     pop_H = np.ones((N_a, N_z)) * each_density
     pop_N = np.ones((N_a, N_z)) * each_density
     # initialize the while loop
@@ -54,30 +54,123 @@ def get_stationary_dist_conditional_on_x(trans_prob_z,
     flag = (diff > tol)
     return pop_H, pop_N, flag
 
+@njit(f8[:, :]
+      (f8[:,:], f8[:,:], f8[:,:,:], f8[:,:,:],
+       i8[:,:,:], i8[:,:,:], i8[:,:,:], f8[:]))
+def get_joint_transition_matrix(trans_prob_z,
+                                trans_prob_x,
+                                default_prob,
+                                purchase_prob,
+                                a_star_H_idx,
+                                a_star_NP_idx,
+                                a_star_NN_idx,
+                                a_grid):
+    # Get the number of grid points
+    N_h = 2
+    N_a = default_prob.shape[0]
+    N_z = trans_prob_z.shape[0]
+    N_x = trans_prob_x.shape[0]
+    # Prepare some auxiliary values
+    N_zx = N_z * N_x
+    N_azx = N_a * N_z * N_x
+    N = N_h * N_a * N_z * N_x
+    # define a helper function
+    def cumulative_idx(h_idx, a_idx, z_idx, x_idx):
+        return N_azx * h_idx + N_zx * a_idx + N_x * z_idx + x_idx
+    # find the index satsfying a=0
+    a0_idx = find_nearest_idx(0, a_grid)
+    # Prepare arrays to save the transiton probabilities
+    trans_mat = np.zeros((N, N))
+    for z_prime_idx in range(N_z):
+        for x_prime_idx in range(N_x):
+            for a_idx in range(N_a):
+                for z_idx in range(N_z):
+                    for x_idx in range(N_x):
+                        a_prime_idx_HH = a_star_H_idx[a_idx, z_idx, x_idx]
+                        a_prime_idx_HN = a0_idx
+                        a_prime_idx_NH = a_star_NP_idx[a_idx, z_idx, x_idx]
+                        a_prime_idx_NN = a_star_NN_idx[a_idx, z_idx, x_idx]
+                        row_H = cumulative_idx(0, a_idx, z_idx, x_idx)
+                        row_N = cumulative_idx(1, a_idx, z_idx, x_idx)
+                        col_HH = cumulative_idx(0, a_prime_idx_HH, z_prime_idx, x_prime_idx)
+                        col_HN = cumulative_idx(1, a_prime_idx_HN, z_prime_idx, x_prime_idx)
+                        col_NH = cumulative_idx(0, a_prime_idx_NH, z_prime_idx, x_prime_idx)
+                        col_NN = cumulative_idx(1, a_prime_idx_NN, z_prime_idx, x_prime_idx)
+                        # Pick up probabilities
+                        Pz = trans_prob_z[z_idx, z_prime_idx] # Prob of z to z_prime
+                        Px = trans_prob_x[x_idx, x_prime_idx] # Prob of x to x_prime
+                        Pd = default_prob[a_idx, z_idx, x_idx] # Prob of H to N
+                        Pp = purchase_prob[a_idx, z_idx, x_idx] # Prob of N to H
+                        trans_mat[row_H, col_HH] = (1 - Pd) * Pz * Px
+                        trans_mat[row_H, col_HN] = Pd * Pz * Px
+                        trans_mat[row_N, col_NH] = (1 - Pp) * Pz * Px
+                        trans_mat[row_N, col_NN] = Pp * Pz * Px
+    return trans_mat
+
+#@njit(f8[:](f8[:, :], f8)) # numba does not work when eig() returns complex numbers.
+def get_stationary_dist_by_eig(transition_matrix,
+                               tol = 1E-5):
+    eigval, eigvec = np.linalg.eig(transition_matrix)
+    diff = np.abs(np.real(eigval) - 1.)
+    count = np.sum((diff < tol))
+    if count == 1:
+        print('The system has a unique stationary distribution.')
+    elif count == 0:
+        print('The system is not stationary.')
+    else:
+        print('The system has multiple stationary distribuitions.')
+        print(f'The transiton matrix has {count} eigenvalues of unity.')
+    if count == 0:
+        return np.zeros((eigvec.shape[0],)), np.nan, count
+    else:
+        density = np.real(eigvec[:, (diff < tol)])
+        for i in range(count):
+            density[:, i] = density[:, i] / sum(density[:, i])
+        return density, np.real(eigval[diff < tol]), count
+
+@njit(types.Tuple((f8[:, :, :], f8[:, :, :]))(f8[:], i8, i8, i8))
+def convert_flatten_dist_to_array(flatten_distribution, N_a, N_z, N_x):
+    # Prepare some auxiliary values
+    N_zx = N_z * N_x
+    N_azx = N_a * N_z * N_x
+    # define a helper function
+    def cumulative_idx(h_idx, a_idx, z_idx, x_idx):
+        return N_azx * h_idx + N_zx * a_idx + N_x * z_idx + x_idx
+    pop_H = np.zeros((N_a, N_z, N_x))
+    pop_N = np.zeros((N_a, N_z, N_x))
+    for a_idx in range(N_a):
+        for z_idx in range(N_z):
+                for x_idx in range(N_x):
+                    idx_H = cumulative_idx(0, a_idx, z_idx, x_idx)
+                    pop_H[a_idx, z_idx, x_idx] = flatten_distribution[idx_H]
+                    idx_N = cumulative_idx(1, a_idx, z_idx, x_idx)
+                    pop_N[a_idx, z_idx, x_idx] = flatten_distribution[idx_N]
+    return pop_H, pop_N
+    
 @njit(types.Tuple((f8[:, :, :], f8[:, :, :], b1))
       (f8[:,:], f8[:,:], f8[:,:,:], f8[:,:,:],
        i8[:,:,:], i8[:,:,:], i8[:,:,:], f8[:], i8, f8))
-def get_stationary_dist(trans_prob_z,
-                        trans_prob_x,
-                        default_prob,
-                        purchase_prob,
-                        a_star_H_idx,
-                        a_star_NP_idx,
-                        a_star_NN_idx,
-                        a_grid,
-                        max_iter,
-                        tol):
+def get_stationary_dist_by_iter(trans_prob_z,
+                                trans_prob_x,
+                                default_prob,
+                                purchase_prob,
+                                a_star_H_idx,
+                                a_star_NP_idx,
+                                a_star_NN_idx,
+                                a_grid,
+                                max_iter,
+                                tol):
     # The following two lines are pure computational stuff (for efficient usage of memory)
     trans_prob_z =  np.ascontiguousarray(trans_prob_z)
     trans_prob_x =  np.ascontiguousarray(trans_prob_x)
     # Get the number of grid points
+    N_a = default_prob.shape[0]
     N_z = trans_prob_z.shape[0]
     N_x = trans_prob_x.shape[0]
-    N_a = default_prob.shape[0]
     # find the index satsfying a=0
     a0_idx = find_nearest_idx(0, a_grid)
     # initialize the distribution (start with uniform)
-    each_density = 1/ (N_a * N_z * N_x * 2) # 2 = homeowner or not
+    each_density = 1/ (2 * N_a * N_z * N_x) # 2 = homeowner or not
     pop_H = np.ones((N_a, N_z, N_x)) * each_density
     pop_N = np.ones((N_a, N_z, N_x)) * each_density
     # initialize the while loop
