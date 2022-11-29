@@ -19,7 +19,8 @@ class FRM_FixedHousePrice(FixedHousePrice):
                  c_d = c_d_def,
                  r = r_def,
                  theta = theta_def,
-                 kappa = kappa_def,
+                 kappaH = kappaH_def,
+                 kappaN = kappaN_def,
                  a_ranage = a_range_def,
                  N_a = N_a_def,
                  ph = ph_def
@@ -38,7 +39,8 @@ class FRM_FixedHousePrice(FixedHousePrice):
                          c_d = c_d,
                          r = r,
                          theta = theta,
-                         kappa = kappa,
+                         kappaH = kappaH,
+                         kappaN = kappaN,
                          a_ranage = a_ranage,
                          N_a = N_a,
                          ph = ph)
@@ -64,7 +66,8 @@ class FRM_FixedHousePrice(FixedHousePrice):
                                  c_d = self.c_d,
                                  r = self.r,
                                  theta = self.theta,
-                                 kappa = self.kappa,
+                                 kappaH = self.kappaH,
+                                 kappaN = self.kappaN,
                                  max_iter = max_iter,
                                  tol = tol)
         stopwatch.stop()

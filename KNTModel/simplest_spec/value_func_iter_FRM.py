@@ -6,10 +6,10 @@ from ..tools import find_nearest_idx
 
 @njit(types.Tuple((f8[:,:,:], f8[:,:,:], f8[:,:,:], f8[:,:,:], f8[:,:,:], i8[:,:,:], i8[:,:,:], i8[:,:,:], b1))
       (f8[:], f8[:,:], f8[:], f8[:,:], f8[:], f8, f8, f8, f8, f8, f8, f8, f8, f8,
-       f8, f8, f8, i8, f8))
+       f8, f8, f8, f8, i8, f8))
 def value_func_iter(z_grid, trans_prob_z, x_grid, trans_prob_x, a_grid,
                     beta, alpha, sigma, gamma, d, ph, h_star, h_eps, c_d,
-                    r, theta, kappa, max_iter, tol):
+                    r, theta, kappaH, kappaN, max_iter, tol):
     # find the index satisfying a = 0
     a0_idx = find_nearest_idx(0, a_grid)
     # Prepare initial guesses for values and mortgage rates
@@ -67,13 +67,13 @@ def value_func_iter(z_grid, trans_prob_z, x_grid, trans_prob_x, a_grid,
                              trans_prob_x_vec = trans_prob_x_H[x_idx, :],
                              V_N_prime = VN_tp1)
         # Expected value for homeowners (considering the Gumbel disturbance)
-        VH_t = V_H(V_HR_t, V_HD_t, kappa)
+        VH_t = V_H(V_HR_t, V_HD_t, kappaH)
         # Expected value for non-homeowners (considering the Gumbel disturbance)
-        VN_t = V_N(V_NP_t, V_NN_t, kappa)
+        VN_t = V_N(V_NP_t, V_NN_t, kappaN)
         # Default probabilities for homeowners (considering the Gumbel disturbance)
-        D_prob = default_prob(V_HR_t, V_HD_t, kappa)
+        D_prob = default_prob(V_HR_t, V_HD_t, kappaH)
         # Purchase probabilities for non-homeowners (considering the Gumbel disturbance)
-        P_prob = purchase_prob(V_NP_t, V_NN_t, kappa)
+        P_prob = purchase_prob(V_NP_t, V_NN_t, kappaN)
         # Calculate the mortgage rate in the previous period
         for a_idx in range(N_a):
             for z_idx in range(N_z):

@@ -5,7 +5,7 @@ class VariableHousePrice(KNTModel):
     def __init__(self, z_grid, trans_prob_z, x_grid, trans_prob_x,
                  ph_grid, trans_prob_ph,
                  beta, alpha, sigma, gamma, d, h_star, h_eps,
-                 c_d, r, theta, kappa, a_ranage, N_a,
+                 c_d, r, theta, kappaH, kappaN, a_ranage, N_a,
                  ):
         super().__init__(z_grid = z_grid,
                          trans_prob_z = trans_prob_z,
@@ -21,7 +21,8 @@ class VariableHousePrice(KNTModel):
                          c_d = c_d,
                          r = r,
                          theta = theta,
-                         kappa = kappa,
+                         kappaH = kappaH,
+                         kappaN = kappaN,
                          a_ranage = a_ranage,
                          N_a = N_a)
         self.ph_grid, self.trans_prob_ph = ph_grid, trans_prob_ph
@@ -44,7 +45,8 @@ class ARM_VariableHousePrice(VariableHousePrice):
                  c_d = c_d_def,
                  r = r_def,
                  theta = theta_def,
-                 kappa = kappa_def,
+                 kappaH = kappaH_def,
+                 kappaN = kappaN_def,
                  a_ranage = a_range_def,
                  N_a = N_a_def,
                  ph = ph_def
@@ -65,7 +67,8 @@ class ARM_VariableHousePrice(VariableHousePrice):
                          c_d = c_d,
                          r = r,
                          theta = theta,
-                         kappa = kappa,
+                         kappaH = kappaH,
+                         kappaN = kappaN,
                          a_ranage = a_ranage,
                          N_a = N_a,
                          ph = ph)
@@ -89,7 +92,8 @@ class FRM_VariableHousePrice(VariableHousePrice):
                  c_d = c_d_def,
                  r = r_def,
                  theta = theta_def,
-                 kappa = kappa_def,
+                 kappaH = kappaH_def,
+                 kappaN = kappaN_def,
                  a_ranage = a_range_def,
                  N_a = N_a_def,
                  ph = ph_def
@@ -110,7 +114,8 @@ class FRM_VariableHousePrice(VariableHousePrice):
                          c_d = c_d,
                          r = r,
                          theta = theta,
-                         kappa = kappa,
+                         kappaH = kappaH,
+                         kappaN = kappaN,
                          a_ranage = a_ranage,
                          N_a = N_a,
                          ph = ph)

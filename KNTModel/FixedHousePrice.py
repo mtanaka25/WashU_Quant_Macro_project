@@ -10,7 +10,7 @@ sns.set()
 class FixedHousePrice(KNTModel):
     def __init__(self, z_grid, trans_prob_z, x_grid, trans_prob_x,
                  beta, alpha, sigma, gamma, d, h_star, h_eps,
-                 c_d, r, theta, kappa, a_ranage, N_a, ph
+                 c_d, r, theta, kappaH, kappaN, a_ranage, N_a, ph
                  ):
         super().__init__(z_grid = z_grid,
                          trans_prob_z = trans_prob_z,
@@ -26,7 +26,8 @@ class FixedHousePrice(KNTModel):
                          c_d = c_d,
                          r = r,
                          theta = theta,
-                         kappa = kappa,
+                         kappaH = kappaH,
+                         kappaN = kappaN,
                          a_ranage = a_ranage,
                          N_a = N_a)
         self.ph = ph
@@ -152,6 +153,7 @@ class FixedHousePrice(KNTModel):
         multiple_line_plot(x, data2plot,
                            x_label = xlabel, y_label = ylabel,
                            labels = labels,
+                           plot_45_degree_line = True,
                            savefig = savefig, fname = fname)
     
     def plot_default_prob(self,
@@ -239,7 +241,49 @@ class FixedHousePrice(KNTModel):
                            ylim = [-0.5, 100.5],
                            labels = labels,
                            savefig = savefig, fname = fname)
-        
+    
+    def plot_mortgage_rate(self,
+                          axis = 0,
+                          fixed_states = ((0, 0)),
+                          savefig = True,
+                          fname = 'mortgage_rate.png'
+                          ):
+        # conut the number of series to be plotted
+        if type(fixed_states[0]) == int:
+            N_lines = 1
+        else:
+            N_lines = len(fixed_states)
+        # take x-axis data
+        if axis == 0:
+            x = self.a_grid
+            xlabel = '$a$'
+        elif axis == 1:
+            x = self.z_grid
+            xlabel = '$z$'
+        else:
+            x = self.x_grid
+            xlabel = '$x$'
+        # prepare the array to save data to be plotted
+        data2plot = np.zeros([N_lines, len(x)])
+        labels = []
+        if axis == 0:
+            for n in range(N_lines):
+                data2plot[n, :] = self.rm[:, fixed_states[n][0], fixed_states[n][1]]
+                labels.append('$z_{' + f'{fixed_states[n][0]}' +'}$ and$ x_{'+ f'{fixed_states[n][1]}' +'}$')
+        elif axis == 1:
+            for n in range(N_lines):
+                data2plot[n, :] = self.rm[fixed_states[n][0], :, fixed_states[n][1]]
+                labels.append('$a_{' + f'{fixed_states[n][0]}' +'}$ and$ x_{'+ f'{fixed_states[n][1]}' +'}$')
+        else:
+            for n in range(N_lines):
+                data2plot[n, :] = self.rm[fixed_states[n][0], fixed_states[n][1], :]
+                labels.append('$a_{' + f'{fixed_states[n][0]}' +'}$ and$ z_{'+ f'{fixed_states[n][1]}' +'}$')
+        # Plot the data
+        multiple_line_plot(x, data2plot*100,
+                           x_label = xlabel, y_label = 'mortgage rate (%)',
+                           labels = labels,
+                           savefig = savefig, fname = fname)
+
     def plot_homeownership(self,
                             savefig = True,
                             fname = 'houseownership.png'
@@ -252,4 +296,4 @@ class FixedHousePrice(KNTModel):
             plt.savefig(fname, dpi = 100, bbox_inches='tight', pad_inches=0)
         else:
             plt.show()
-
+    
