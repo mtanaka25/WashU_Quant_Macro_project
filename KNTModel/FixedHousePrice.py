@@ -1,5 +1,5 @@
 from .KNTModel import *
-from .tools import StopWatch, find_nearest_idx, multiple_line_plot
+from .tools import StopWatch, find_nearest_idx, multiple_line_plot, plot_distribution
 from .simplest_spec import get_stationary_dist, get_stationary_dist_conditional_on_x
 from .default_params import max_iter_def, tol_def
 import numpy as np
@@ -322,3 +322,43 @@ class FixedHousePrice(KNTModel):
         else:
             plt.show()
     
+    def plot_stationary_distribution(self,
+                                     homeownership = 'H',
+                                     fixed_axis = 2,
+                                     fixed_state_id = 0,
+                                     savefig = True,
+                                     zlim = [0, 1.05],
+                                     fname = 'stationary_dist.png'
+                                     ):
+        if homeownership == 'H':
+            density = self.density_H
+            title = 'Homeowners'
+        else:
+            density = self.density_N
+            title = 'Non-Homeowners'
+        if fixed_axis == 0:
+            density2plot = density[fixed_state_id, :, :]
+            x, y = self.z_grid, self.x_grid
+            xlabel, ylabel = 'z', 'x'
+            title += ' ($a = a_{' + f'{fixed_state_id}' + '}$)'
+        elif fixed_axis == 1:
+            density2plot = density[:, fixed_state_id, :]
+            x, y = self.a_grid, self.x_grid
+            xlabel, ylabel = 'a', 'x'
+            title += ' ($z = z_{' + f'{fixed_state_id}' + '}$)'
+        else:
+            density2plot = density[:, :, fixed_state_id]
+            x, y = self.a_grid, self.z_grid
+            xlabel, ylabel = 'a', 'z'
+            title += ' ($x = x_{' + f'{fixed_state_id}' + '}$)'
+        plot_distribution(x = x,
+                          y = y,
+                          density = density2plot,
+                          xlabel = xlabel,
+                          ylabel = ylabel,
+                          zlabel = '',
+                          title = title,
+                          zlim = zlim,
+                          savefig = savefig,
+                          fname = fname
+                          )
