@@ -1,6 +1,6 @@
 from .KNTModel import *
 from .tools import StopWatch, find_nearest_idx, multiple_line_plot
-from .simplest_spec import get_stationary_dist
+from .simplest_spec import get_stationary_dist, get_stationary_dist_conditional_on_x
 from .default_params import max_iter_def, tol_def
 import numpy as np
 import matplotlib.pyplot as plt
@@ -32,19 +32,44 @@ class FixedHousePrice(KNTModel):
                          N_a = N_a)
         self.ph = ph
     
+    def get_stationary_dist_conditional_on_x(self,
+                                             fixed_x = 1.,
+                                             max_iter = max_iter_def,
+                                             tol = tol_def):
+        x1_idx = find_nearest_idx(fixed_x, self.x_grid)
+        print(f'Starting to calculate the stationary distribution (under x = {fixed_x})...',
+              flush = True)
+        stopwatch = StopWatch()
+        result = get_stationary_dist_conditional_on_x(
+            trans_prob_z = self.trans_prob_z,
+            default_prob = self.probD[:, :, x1_idx],
+            purchase_prob = self.probP[:, :, x1_idx],
+            a_star_H_idx = self.a_star_H_idx[:, :, x1_idx],
+            a_star_NP_idx = self.a_star_NP_idx[:, :, x1_idx],
+            a_star_NN_idx = self.a_star_NN_idx[:, :, x1_idx],
+            a_grid = self.a_grid,
+            max_iter = max_iter,
+            tol = tol)
+        stopwatch.stop()
+        if result[-1]==True:
+            print('Failed to obtain the stationary distribution. Try again with more max_iter.')
+        # Unpack and store the result
+        self.conditional_density_H, self.conditional_density_N, _ = result
+    
     def get_stationary_dist(self,
                             max_iter = max_iter_def,
                             tol = tol_def):
         x1_idx = find_nearest_idx(1., self.x_grid)
-        print('Starting to calculate the stationary distribution (under x = 1)...',
+        print('Starting to calculate the stationary distribution...',
               flush = True)
         stopwatch = StopWatch()
         result = get_stationary_dist(trans_prob_z = self.trans_prob_z,
-                                     default_prob = self.probD[:, :, x1_idx],
-                                     purchase_prob = self.probP[:, :, x1_idx],
-                                     a_star_H_idx = self.a_star_H_idx[:, :, x1_idx],
-                                     a_star_NP_idx = self.a_star_NP_idx[:, :, x1_idx],
-                                     a_star_NN_idx = self.a_star_NN_idx[:, :, x1_idx],
+                                     trans_prob_x = self.trans_prob_x,
+                                     default_prob = self.probD,
+                                     purchase_prob = self.probP,
+                                     a_star_H_idx = self.a_star_H_idx,
+                                     a_star_NP_idx = self.a_star_NP_idx,
+                                     a_star_NN_idx = self.a_star_NN_idx,
                                      a_grid = self.a_grid,
                                      max_iter = max_iter,
                                      tol = tol)
