@@ -12,7 +12,7 @@ sns.set()
 class FixedHousePrice(KNTModel):
     def __init__(self, z_grid, trans_prob_z, x_grid, trans_prob_x,
                  beta, alpha, sigma, gamma, d, h_star, h_eps,
-                 c_d, r, theta, kappaH, kappaN, a_ranage, N_a, ph
+                 c_d, a_d_max, r, theta, kappaH, kappaN, a_ranage, N_a, ph
                  ):
         super().__init__(z_grid = z_grid,
                          trans_prob_z = trans_prob_z,
@@ -26,6 +26,7 @@ class FixedHousePrice(KNTModel):
                          h_star = h_star,
                          h_eps = h_eps,
                          c_d = c_d,
+                         a_d_max = a_d_max,
                          r = r,
                          theta = theta,
                          kappaH = kappaH,
@@ -35,9 +36,9 @@ class FixedHousePrice(KNTModel):
         self.ph = ph
     
     def get_dist_under_specific_x(self,
-                                             fixed_x = 1.,
-                                             max_iter = max_iter_def,
-                                             tol = tol_def):
+                                  fixed_x = 1.,
+                                  max_iter = max_iter_def,
+                                  tol = tol_def):
         x1_idx = find_nearest_idx(fixed_x, self.x_grid)
         print(f'Starting to calculate the distribution under x = {fixed_x}...',
               flush = True)
@@ -46,10 +47,10 @@ class FixedHousePrice(KNTModel):
             trans_prob_z = self.trans_prob_z,
             default_prob = self.probD[:, :, x1_idx],
             purchase_prob = self.probP[:, :, x1_idx],
-            a_star_H_idx = self.a_star_H_idx[:, :, x1_idx],
+            a_star_HR_idx = self.a_star_HR_idx[:, :, x1_idx],
+            a_star_HD_idx = self.a_star_HD_idx[:, :, x1_idx],
             a_star_NP_idx = self.a_star_NP_idx[:, :, x1_idx],
             a_star_NN_idx = self.a_star_NN_idx[:, :, x1_idx],
-            a_grid = self.a_grid,
             max_iter = max_iter,
             tol = tol)
         stopwatch.stop()
@@ -69,10 +70,10 @@ class FixedHousePrice(KNTModel):
             trans_prob_x = self.trans_prob_x,
             default_prob = self.probD,
             purchase_prob = self.probP,
-            a_star_H_idx = self.a_star_H_idx,
+            a_star_HR_idx = self.a_star_HR_idx,
+            a_star_HD_idx = self.a_star_HD_idx,
             a_star_NP_idx = self.a_star_NP_idx,
             a_star_NN_idx = self.a_star_NN_idx,
-            a_grid = self.a_grid,
             max_iter = max_iter,
             tol = tol)
         stopwatch.stop()
@@ -89,10 +90,10 @@ class FixedHousePrice(KNTModel):
             trans_prob_x = self.trans_prob_x,
             default_prob = self.probD,
             purchase_prob = self.probP,
-            a_star_H_idx = self.a_star_H_idx,
+            a_star_HR_idx = self.a_star_HR_idx,
+            a_star_HD_idx = self.a_star_HD_idx,
             a_star_NP_idx = self.a_star_NP_idx,
             a_star_NN_idx = self.a_star_NN_idx,
-            a_grid = self.a_grid,
             )
         dist, eigs, count = get_stationary_dist_by_eig(trans_mat, tol)
         if count == 1:
@@ -118,10 +119,10 @@ class FixedHousePrice(KNTModel):
     #         trans_prob_x = self.trans_prob_x,
     #         default_prob = self.probD,
     #         purchase_prob = self.probP,
-    #         a_star_H_idx = self.a_star_H_idx,
+    #         a_star_HR_idx = self.a_star_HR_idx,
+    #         a_star_HD_idx = self.a_star_HD_idx,
     #         a_star_NP_idx = self.a_star_NP_idx,
     #         a_star_NN_idx = self.a_star_NN_idx,
-    #         a_grid = self.a_grid,
     #         )
     #     pop_N = np.ones((1, trans_mat.shape[0]))
     #     pop_N = pop_N/np.sum(pop_N)
@@ -169,15 +170,15 @@ class FixedHousePrice(KNTModel):
         if axis == 0:
             for n in range(N_lines):
                 data2plot[n, :] = V[:, fixed_states[n][0], fixed_states[n][1]]
-                labels.append('$z_{' + f'{fixed_states[n][0]}' +'}$ and$ x_{'+ f'{fixed_states[n][1]}' +'}$')
+                labels.append('$z_{' + f'{fixed_states[n][0]}' +'}$ and $x_{'+ f'{fixed_states[n][1]}' +'}$')
         elif axis == 1:
             for n in range(N_lines):
                 data2plot[n, :] = V[fixed_states[n][0], :, fixed_states[n][1]]
-                labels.append('$a_{' + f'{fixed_states[n][0]}' +'}$ and$ x_{'+ f'{fixed_states[n][1]}' +'}$')
+                labels.append('$a_{' + f'{fixed_states[n][0]}' +'}$ and $x_{'+ f'{fixed_states[n][1]}' +'}$')
         else:
             for n in range(N_lines):
                 data2plot[n, :] = V[fixed_states[n][0], fixed_states[n][1], :]
-                labels.append('$a_{' + f'{fixed_states[n][0]}' +'}$ and$ z_{'+ f'{fixed_states[n][1]}' +'}$')
+                labels.append('$a_{' + f'{fixed_states[n][0]}' +'}$ and $z_{'+ f'{fixed_states[n][1]}' +'}$')
         # Plot the data
         multiple_line_plot(x, data2plot,
                            x_label = xlabel, y_label = ylabel,
@@ -185,15 +186,18 @@ class FixedHousePrice(KNTModel):
                            savefig = savefig, fname = fname)
     
     def plot_saving_func(self,
-                        type_of_household = 'H',
+                        type_of_household = 'HR',
                         axis = 0,
                         fixed_states = ((0, 0)),
                         savefig = True,
                         fname = 'fig_saving.png'
                         ):
-        if type_of_household == 'H':
-            A = self.a_grid[self.a_star_H_idx]
-            ylabel = "${a'}^{H}$"
+        if type_of_household == 'HR':
+            A = self.a_grid[self.a_star_HR_idx]
+            ylabel = "${a'}^{H,R}$"
+        elif type_of_household == 'HD':
+            A = self.a_grid[self.a_star_HD_idx]
+            ylabel = "${a'}^{H,D}$"
         elif type_of_household == 'NP':
             A = self.a_grid[self.a_star_NP_idx]
             ylabel = "${a'}^{N,P}$"
@@ -221,15 +225,15 @@ class FixedHousePrice(KNTModel):
         if axis == 0:
             for n in range(N_lines):
                 data2plot[n, :] = A[:, fixed_states[n][0], fixed_states[n][1]]
-                labels.append('$z_{' + f'{fixed_states[n][0]}' +'}$ and$ x_{'+ f'{fixed_states[n][1]}' +'}$')
+                labels.append('$z_{' + f'{fixed_states[n][0]}' +'}$ and $x_{'+ f'{fixed_states[n][1]}' +'}$')
         elif axis == 1:
             for n in range(N_lines):
                 data2plot[n, :] = A[fixed_states[n][0], :, fixed_states[n][1]]
-                labels.append('$a_{' + f'{fixed_states[n][0]}' +'}$ and$ x_{'+ f'{fixed_states[n][1]}' +'}$')
+                labels.append('$a_{' + f'{fixed_states[n][0]}' +'}$ and $x_{'+ f'{fixed_states[n][1]}' +'}$')
         else:
             for n in range(N_lines):
                 data2plot[n, :] = A[fixed_states[n][0], fixed_states[n][1], :]
-                labels.append('$a_{' + f'{fixed_states[n][0]}' +'}$ and$ z_{'+ f'{fixed_states[n][1]}' +'}$')
+                labels.append('$a_{' + f'{fixed_states[n][0]}' +'}$ and $z_{'+ f'{fixed_states[n][1]}' +'}$')
         # Plot the data
         multiple_line_plot(x, data2plot,
                            x_label = xlabel, y_label = ylabel,
@@ -264,15 +268,15 @@ class FixedHousePrice(KNTModel):
         if axis == 0:
             for n in range(N_lines):
                 data2plot[n, :] = self.probD[:, fixed_states[n][0], fixed_states[n][1]]
-                labels.append('$z_{' + f'{fixed_states[n][0]}' +'}$ and$ x_{'+ f'{fixed_states[n][1]}' +'}$')
+                labels.append('$z_{' + f'{fixed_states[n][0]}' +'}$ and $x_{'+ f'{fixed_states[n][1]}' +'}$')
         elif axis == 1:
             for n in range(N_lines):
                 data2plot[n, :] = self.probD[fixed_states[n][0], :, fixed_states[n][1]]
-                labels.append('$a_{' + f'{fixed_states[n][0]}' +'}$ and$ x_{'+ f'{fixed_states[n][1]}' +'}$')
+                labels.append('$a_{' + f'{fixed_states[n][0]}' +'}$ and $x_{'+ f'{fixed_states[n][1]}' +'}$')
         else:
             for n in range(N_lines):
                 data2plot[n, :] = self.probD[fixed_states[n][0], fixed_states[n][1], :]
-                labels.append('$a_{' + f'{fixed_states[n][0]}' +'}$ and$ z_{'+ f'{fixed_states[n][1]}' +'}$')
+                labels.append('$a_{' + f'{fixed_states[n][0]}' +'}$ and $z_{'+ f'{fixed_states[n][1]}' +'}$')
         # Plot the data
         multiple_line_plot(x, data2plot*100,
                            x_label = xlabel, y_label = 'default prob(%)',
@@ -307,15 +311,15 @@ class FixedHousePrice(KNTModel):
         if axis == 0:
             for n in range(N_lines):
                 data2plot[n, :] = self.probP[:, fixed_states[n][0], fixed_states[n][1]]
-                labels.append('$z_{' + f'{fixed_states[n][0]}' +'}$ and$ x_{'+ f'{fixed_states[n][1]}' +'}$')
+                labels.append('$z_{' + f'{fixed_states[n][0]}' +'}$ and $x_{'+ f'{fixed_states[n][1]}' +'}$')
         elif axis == 1:
             for n in range(N_lines):
                 data2plot[n, :] = self.probP[fixed_states[n][0], :, fixed_states[n][1]]
-                labels.append('$a_{' + f'{fixed_states[n][0]}' +'}$ and$ x_{'+ f'{fixed_states[n][1]}' +'}$')
+                labels.append('$a_{' + f'{fixed_states[n][0]}' +'}$ and $x_{'+ f'{fixed_states[n][1]}' +'}$')
         else:
             for n in range(N_lines):
                 data2plot[n, :] = self.probP[fixed_states[n][0], fixed_states[n][1], :]
-                labels.append('$a_{' + f'{fixed_states[n][0]}' +'}$ and$ z_{'+ f'{fixed_states[n][1]}' +'}$')
+                labels.append('$a_{' + f'{fixed_states[n][0]}' +'}$ and $z_{'+ f'{fixed_states[n][1]}' +'}$')
         # Plot the data
         multiple_line_plot(x, data2plot*100,
                            x_label = xlabel, y_label = 'prob of buying house(%)',
@@ -350,15 +354,15 @@ class FixedHousePrice(KNTModel):
         if axis == 0:
             for n in range(N_lines):
                 data2plot[n, :] = self.rm[:, fixed_states[n][0], fixed_states[n][1]]
-                labels.append('$z_{' + f'{fixed_states[n][0]}' +'}$ and$ x_{'+ f'{fixed_states[n][1]}' +'}$')
+                labels.append('$z_{' + f'{fixed_states[n][0]}' +'}$ and $x_{'+ f'{fixed_states[n][1]}' +'}$')
         elif axis == 1:
             for n in range(N_lines):
                 data2plot[n, :] = self.rm[fixed_states[n][0], :, fixed_states[n][1]]
-                labels.append('$a_{' + f'{fixed_states[n][0]}' +'}$ and$ x_{'+ f'{fixed_states[n][1]}' +'}$')
+                labels.append('$a_{' + f'{fixed_states[n][0]}' +'}$ and $x_{'+ f'{fixed_states[n][1]}' +'}$')
         else:
             for n in range(N_lines):
                 data2plot[n, :] = self.rm[fixed_states[n][0], fixed_states[n][1], :]
-                labels.append('$a_{' + f'{fixed_states[n][0]}' +'}$ and$ z_{'+ f'{fixed_states[n][1]}' +'}$')
+                labels.append('$a_{' + f'{fixed_states[n][0]}' +'}$ and $z_{'+ f'{fixed_states[n][1]}' +'}$')
         # Plot the data
         multiple_line_plot(x, data2plot*100,
                            x_label = xlabel, y_label = 'mortgage rate (%)',

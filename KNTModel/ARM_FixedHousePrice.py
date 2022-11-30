@@ -17,6 +17,7 @@ class ARM_FixedHousePrice(FixedHousePrice):
                  h_star = h_star_def,
                  h_eps = h_eps_def,
                  c_d = c_d_def,
+                 a_d_max = a_d_max_def,
                  r = r_def,
                  theta = theta_def,
                  kappaH = kappaH_def,
@@ -37,6 +38,7 @@ class ARM_FixedHousePrice(FixedHousePrice):
                          h_star = h_star,
                          h_eps = h_eps,
                          c_d = c_d,
+                         a_d_max = a_d_max,
                          r = r,
                          theta = theta,
                          kappaH = kappaH,
@@ -64,6 +66,7 @@ class ARM_FixedHousePrice(FixedHousePrice):
                                  h_star = self.h_star,
                                  h_eps = self.h_eps,
                                  c_d = self.c_d,
+                                 a_d_max = self.a_d_max,
                                  r = self.r,
                                  theta = self.theta,
                                  kappaH = self.kappaH,
@@ -75,5 +78,5 @@ class ARM_FixedHousePrice(FixedHousePrice):
             print('Value iteration failed to converge. Try again with more max_iter.')
         # Unpack and store the result
         self.ValueH, self.ValueN, self.rm, self.probD, self.probP,\
-        self.a_star_H_idx, self.a_star_NP_idx, self.a_star_NN_idx, _ = result
+        self.a_star_HR_idx, self.a_star_HD_idx, self.a_star_NP_idx, self.a_star_NN_idx, _ = result
  

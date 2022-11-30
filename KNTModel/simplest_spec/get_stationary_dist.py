@@ -4,15 +4,15 @@ from numba import types, f8, i8, b1
 from ..tools import find_nearest_idx
 
 @njit(types.Tuple((f8[:, :], f8[:, :], b1))
-      (f8[:,:], f8[:,:], f8[:,:],
-       i8[:,:], i8[:,:], i8[:,:], f8[:], i8, f8))
+      (f8[:,:], f8[:,:], f8[:,:], i8[:,:],
+       i8[:,:], i8[:,:], i8[:,:], i8, f8))
 def get_distribution_under_specific_x(trans_prob_z,
                                       default_prob,
                                       purchase_prob,
-                                      a_star_H_idx,
+                                      a_star_HR_idx,
+                                      a_star_HD_idx,
                                       a_star_NP_idx,
                                       a_star_NN_idx,
-                                      a_grid,
                                       max_iter,
                                       tol):
     # The following is pure computational stuff (for efficient usage of memory)
@@ -20,8 +20,6 @@ def get_distribution_under_specific_x(trans_prob_z,
     # Get the number of grid points
     N_a = default_prob.shape[0]
     N_z = trans_prob_z.shape[0]
-    # find the index satsfying a=0
-    a0_idx = find_nearest_idx(0, a_grid)
     # initialize the distribution (start with uniform)
     each_density = 1/ (2 * N_a * N_z)
     pop_H = np.ones((N_a, N_z)) * each_density
@@ -41,8 +39,8 @@ def get_distribution_under_specific_x(trans_prob_z,
         # applying the optimal asset holdings
         for a_idx in prange(N_a):
             for z_idx in prange(N_z):
-                pop_H[a_star_H_idx[a_idx, z_idx], z_idx] += H_to_H[a_idx, z_idx]
-                pop_N[a0_idx, z_idx] += H_to_N[a_idx, z_idx]
+                pop_H[a_star_HR_idx[a_idx, z_idx], z_idx] += H_to_H[a_idx, z_idx]
+                pop_N[a_star_HD_idx[a_idx, z_idx], z_idx] += H_to_N[a_idx, z_idx]
                 pop_H[a_star_NP_idx[a_idx, z_idx], z_idx] += N_to_H[a_idx, z_idx]
                 pop_N[a_star_NN_idx[a_idx, z_idx], z_idx] += N_to_N[a_idx, z_idx]
         # Convergence check
@@ -56,15 +54,15 @@ def get_distribution_under_specific_x(trans_prob_z,
 
 @njit(f8[:, :]
       (f8[:,:], f8[:,:], f8[:,:,:], f8[:,:,:],
-       i8[:,:,:], i8[:,:,:], i8[:,:,:], f8[:]))
+       i8[:,:,:], i8[:,:,:], i8[:,:,:], i8[:,:,:]))
 def get_joint_transition_matrix(trans_prob_z,
                                 trans_prob_x,
                                 default_prob,
                                 purchase_prob,
-                                a_star_H_idx,
+                                a_star_HR_idx,
+                                a_star_HD_idx,
                                 a_star_NP_idx,
-                                a_star_NN_idx,
-                                a_grid):
+                                a_star_NN_idx):
     # Get the number of grid points
     N_h = 2
     N_a = default_prob.shape[0]
@@ -77,8 +75,6 @@ def get_joint_transition_matrix(trans_prob_z,
     # define a helper function
     def cumulative_idx(h_idx, a_idx, z_idx, x_idx):
         return N_azx * h_idx + N_zx * a_idx + N_x * z_idx + x_idx
-    # find the index satsfying a=0
-    a0_idx = find_nearest_idx(0, a_grid)
     # Prepare arrays to save the transiton probabilities
     trans_mat = np.zeros((N, N))
     for z_prime_idx in range(N_z):
@@ -86,8 +82,8 @@ def get_joint_transition_matrix(trans_prob_z,
             for a_idx in range(N_a):
                 for z_idx in range(N_z):
                     for x_idx in range(N_x):
-                        a_prime_idx_HH = a_star_H_idx[a_idx, z_idx, x_idx]
-                        a_prime_idx_HN = a0_idx
+                        a_prime_idx_HH = a_star_HR_idx[a_idx, z_idx, x_idx]
+                        a_prime_idx_HN = a_star_HD_idx[a_idx, z_idx, x_idx]
                         a_prime_idx_NH = a_star_NP_idx[a_idx, z_idx, x_idx]
                         a_prime_idx_NN = a_star_NN_idx[a_idx, z_idx, x_idx]
                         row_H = cumulative_idx(0, a_idx, z_idx, x_idx)
@@ -155,15 +151,16 @@ def convert_flatten_dist_to_array(flatten_distribution, N_a, N_z, N_x):
     
 @njit(types.Tuple((f8[:, :, :], f8[:, :, :], b1))
       (f8[:,:], f8[:,:], f8[:,:,:], f8[:,:,:],
-       i8[:,:,:], i8[:,:,:], i8[:,:,:], f8[:], i8, f8))
+       i8[:,:,:], i8[:,:,:], i8[:,:,:], i8[:,:,:],
+       i8, f8))
 def get_stationary_dist_by_iter(trans_prob_z,
                                 trans_prob_x,
                                 default_prob,
                                 purchase_prob,
-                                a_star_H_idx,
+                                a_star_HR_idx,
+                                a_star_HD_idx,
                                 a_star_NP_idx,
                                 a_star_NN_idx,
-                                a_grid,
                                 max_iter,
                                 tol):
     # The following two lines are pure computational stuff (for efficient usage of memory)
@@ -173,8 +170,6 @@ def get_stationary_dist_by_iter(trans_prob_z,
     N_a = default_prob.shape[0]
     N_z = trans_prob_z.shape[0]
     N_x = trans_prob_x.shape[0]
-    # find the index satsfying a=0
-    a0_idx = find_nearest_idx(0, a_grid)
     # initialize the distribution (start with uniform)
     each_density = 1/ (2 * N_a * N_z * N_x) # 2 = homeowner or not
     pop_H = np.ones((N_a, N_z, N_x)) * each_density
@@ -198,8 +193,8 @@ def get_stationary_dist_by_iter(trans_prob_z,
                             Pp = purchase_prob[a_idx, z_idx, x_idx]
                             Pz = trans_prob_z[z_idx, zp_idx]
                             Px = trans_prob_x[x_idx, xp_idx]
-                            pop_H[a_star_H_idx[a_idx, z_idx, x_idx], zp_idx, xp_idx] += (1-Pd) * Pz * Px * H_pre
-                            pop_N[a0_idx, zp_idx, xp_idx] += Pd * Pz * Px * H_pre
+                            pop_H[a_star_HR_idx[a_idx, z_idx, x_idx], zp_idx, xp_idx] += (1-Pd) * Pz * Px * H_pre
+                            pop_N[a_star_HD_idx[a_idx, z_idx, x_idx], zp_idx, xp_idx] += Pd * Pz * Px * H_pre
                             pop_H[a_star_NP_idx[a_idx, z_idx, x_idx], zp_idx, xp_idx] += Pp * Pz * Px * N_pre
                             pop_N[a_star_NN_idx[a_idx, z_idx, x_idx], zp_idx, xp_idx] += (1-Pp) * Pz * Px * N_pre
         # Convergence check
