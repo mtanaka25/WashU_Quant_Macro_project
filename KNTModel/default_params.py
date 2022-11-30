@@ -8,6 +8,7 @@ ph_def = 2.
 h_star_def = 5.0
 h_eps_def = 0.8
 c_d_def = 0.1
+c_hat_d_def = 999.
 a_d_max_def = 5.
 r_def = 0.01 #Stokey (2009)
 theta_def = 1.0
