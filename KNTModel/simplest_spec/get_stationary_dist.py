@@ -1,7 +1,6 @@
 import numpy as np
 from numba import njit, prange
 from numba import types, f8, i8, b1
-from ..tools import find_nearest_idx
 
 @njit(types.Tuple((f8[:, :], f8[:, :], b1))
       (f8[:,:], f8[:,:], f8[:,:], i8[:,:],

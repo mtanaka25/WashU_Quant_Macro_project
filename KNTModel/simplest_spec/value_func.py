@@ -59,8 +59,8 @@ def V_HR(z, a, a_prime_vec, h, ph, rm, r, beta, alpha, sigma, gamma, d,
         # return max and argmax
         return max(possible_values), np.argmax(possible_values)
 
-@njit(f8(f8, f8, f8, f8, f8, f8, f8, f8, f8[:], f8[:], f8[:,:]))
-def V_HD(z, h, c_d, c_hat_d, beta, alpha, sigma, gamma,
+@njit(f8(f8, f8, f8, f8, f8, f8, f8, f8, f8, f8[:], f8[:], f8[:,:]))
+def V_HD(z, h, c_d, c_hat_d, delta, beta, alpha, sigma, gamma,
          trans_prob_z_vec, trans_prob_x_vec, V_N_prime):
     # transition probability matirix
     # (from today' z and x to each pair of (z', x'))
@@ -70,7 +70,7 @@ def V_HD(z, h, c_d, c_hat_d, beta, alpha, sigma, gamma,
         for x_idx, prob_x in enumerate(trans_prob_x_vec):
             joint_trans_prob[z_idx, x_idx] = prob_z * prob_x
     # consumption is income net of default cost
-    c = min([z - c_d, c_hat_d])
+    c = min([delta * (z - c_d), c_hat_d])
     # flow utility
     flow_u = utility(c = c,
                      h = h,

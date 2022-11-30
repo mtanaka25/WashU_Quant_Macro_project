@@ -5,11 +5,11 @@ from .value_func import *
 from ..tools import find_nearest_idx
 
 @njit(types.Tuple((f8[:,:,:], f8[:,:,:], f8[:,:,:], f8[:,:,:], f8[:,:,:], i8[:,:,:], i8[:,:,:], i8[:,:,:], i8[:,:,:], b1))
-      (f8[:], f8[:,:], f8[:], f8[:,:], f8[:], f8, f8, f8, f8, f8, f8, f8, f8, f8, f8, f8,
-       f8, f8, f8, f8, i8, f8))
+      (f8[:], f8[:,:], f8[:], f8[:,:], f8[:], f8, f8, f8, f8, f8, f8, f8, f8, f8,
+       f8, f8, f8, f8, f8, f8, f8, i8, f8))
 def value_func_iter(z_grid, trans_prob_z, x_grid, trans_prob_x, a_grid,
-                    beta, alpha, sigma, gamma, d, ph, h_star, h_eps, c_d, c_hat_d, a_d_max,
-                    r, theta, kappaH, kappaN, max_iter, tol):
+                    beta, alpha, sigma, gamma, d, ph, h_star, h_eps, c_d,
+                    c_hat_d, delta, a_d_max, r, theta, kappaH, kappaN, max_iter, tol):
     # find the largest index satisfying a_d_max
     a_d_max_idx = find_nearest_idx(a_d_max, a_grid)
     if a_grid[a_d_max_idx] > a_d_max:
@@ -48,16 +48,18 @@ def value_func_iter(z_grid, trans_prob_z, x_grid, trans_prob_x, a_grid,
                              V_H_prime = VH_tp1)
                     if a_idx <= a_d_max_idx:
                         V_HD_t[a_idx, z_idx, x_idx] = \
-                            V_HD(z = z, h = h_eps, c_d = c_d, c_hat_d = c_hat_d, beta = beta,
-                                 alpha = alpha, sigma = sigma, gamma = gamma,
+                            V_HD(z = z, h = h_eps, c_d = c_d, c_hat_d = c_hat_d,
+                                 delta = delta, beta = beta, alpha = alpha,
+                                 sigma = sigma, gamma = gamma,
                                  trans_prob_z_vec = trans_prob_z[z_idx, :],
                                  trans_prob_x_vec = trans_prob_x[x_idx, :],
                                  V_N_prime = VN_tp1[a_idx, :, :])
                         a_star_HD[a_idx, z_idx, x_idx] = a_idx
                     else:
                         V_HD_t[a_idx, z_idx, x_idx] = \
-                            V_HD(z = z, h = h_eps, c_d = c_d, c_hat_d = c_hat_d, beta = beta,
-                                 alpha = alpha, sigma = sigma, gamma = gamma,
+                            V_HD(z = z, h = h_eps, c_d = c_d, c_hat_d = c_hat_d,
+                                 delta = delta, beta = beta, alpha = alpha,
+                                 sigma = sigma, gamma = gamma,
                                  trans_prob_z_vec = trans_prob_z[z_idx, :],
                                  trans_prob_x_vec = trans_prob_x[x_idx, :],
                                  V_N_prime = VN_tp1[a_d_max_idx, :, :])

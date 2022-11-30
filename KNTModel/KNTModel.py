@@ -4,7 +4,7 @@ from .tools import find_nearest_idx
 class KNTModel:
     def __init__(self, z_grid, trans_prob_z, x_grid, trans_prob_x,
                  beta, alpha, sigma, gamma, d, h_star, h_eps,
-                 c_d, c_hat_d, a_d_max, r, theta, kappaH, kappaN, a_ranage, N_a
+                 c_d, c_hat_d, a_d_max, delta, r, theta, kappaH, kappaN, a_ranage, N_a
                  ):
         # Prepare the grid for a
         a_grid = np.linspace(a_ranage[0], a_ranage[1], N_a)
@@ -19,5 +19,5 @@ class KNTModel:
         self.beta, self.alpha, self.sigma = beta, alpha, sigma
         self.gamma, self.d, = gamma, d,
         self.h_star, self.h_eps, self.c_d = h_star, h_eps, c_d
-        self.a_d_max, self.c_hat_d = a_d_max, c_hat_d
+        self.a_d_max, self.c_hat_d, self.delta = a_d_max, c_hat_d, delta
         self.r, self.theta, self.kappaH, self.kappaN = r, theta, kappaH, kappaN
