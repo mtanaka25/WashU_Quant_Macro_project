@@ -121,12 +121,18 @@ def get_stationary_dist_by_eig(transition_matrix,
         print('The system has multiple stationary distribuitions.')
         print(f'The transiton matrix has {count} eigenvalues of unity.')
     if count == 0:
-        return np.zeros((eigvec.shape[0],)), np.nan, count
+        density, eigvals = np.zeros((eigvec.shape[0], 1))
+    elif count == 1:
+        eigvals = np.real(eigval[diff < tol])
+        density = np.real(eigvec[:, (diff < tol)])
+        density = density / sum(density)
+        density.reshape[-1, 1]
     else:
+        eigvals = np.real(eigval[diff < tol])
         density = np.real(eigvec[:, (diff < tol)])
         for i in range(count):
             density[:, i] = density[:, i] / sum(density[:, i])
-        return density, np.real(eigval[diff < tol]), count
+    return density, eigvals, count
 
 @njit(types.Tuple((f8[:, :, :], f8[:, :, :]))(f8[:], i8, i8, i8))
 def convert_flatten_dist_to_array(flatten_distribution, N_a, N_z, N_x):
