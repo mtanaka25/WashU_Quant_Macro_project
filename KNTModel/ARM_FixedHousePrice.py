@@ -20,6 +20,7 @@ class ARM_FixedHousePrice(FixedHousePrice):
                  c_hat_d = c_hat_d_def,
                  delta = delta_def,
                  a_d_max = a_d_max_def,
+                 lmbd = lmbd_def,
                  r = r_def,
                  theta = theta_def,
                  kappaH = kappaH_def,
@@ -43,6 +44,7 @@ class ARM_FixedHousePrice(FixedHousePrice):
                          c_hat_d = c_hat_d,
                          delta = delta,
                          a_d_max = a_d_max,
+                         lmbd = lmbd,
                          r = r,
                          theta = theta,
                          kappaH = kappaH,
@@ -73,6 +75,7 @@ class ARM_FixedHousePrice(FixedHousePrice):
                                  c_hat_d = self.c_hat_d,
                                  delta = self.delta,
                                  a_d_max = self.a_d_max,
+                                 lmbd = self.lmbd,
                                  r = self.r,
                                  theta = self.theta,
                                  kappaH = self.kappaH,
@@ -85,4 +88,3 @@ class ARM_FixedHousePrice(FixedHousePrice):
         # Unpack and store the result
         self.ValueH, self.ValueN, self.rm, self.probD, self.probP,\
         self.a_star_HR_idx, self.a_star_HD_idx, self.a_star_NP_idx, self.a_star_NN_idx, _ = result
- 

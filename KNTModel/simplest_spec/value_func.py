@@ -84,9 +84,9 @@ def V_HD(z, h, c_d, c_hat_d, delta, beta, alpha, sigma, gamma,
     # return the value of default
     return flow_u + beta * expected_u
 
-@njit(types.Tuple((f8, i8))(f8, f8, f8[:], f8, f8, f8, f8, f8, f8, f8, f8,
+@njit(types.Tuple((f8, i8))(f8, f8, f8[:], f8, f8, f8, f8, f8, f8, f8, f8, f8,
                           f8[:], f8[:], f8[:,:,:]))
-def V_NP(z, a, a_prime_vec, h, ph, r, beta, alpha, sigma, gamma, d,
+def V_NP(z, a, a_prime_vec, h, ph, lmbd, r, beta, alpha, sigma, gamma, d,
          trans_prob_z_vec, trans_prob_x_vec, V_H_prime):
     # transition probability matirix
     # (from today' z and x to each pair of (z', x'))
@@ -109,7 +109,7 @@ def V_NP(z, a, a_prime_vec, h, ph, r, beta, alpha, sigma, gamma, d,
                  r = r,
                  a_prime = a_prime,
                  down_pay = down_pay,
-                 mortgage_pay = 0.)
+                 mortgage_pay = 0.) - lmbd
         if c <= 0:
             # if c is negative, give penalty
             flow_u = utility(c = 1E-5,

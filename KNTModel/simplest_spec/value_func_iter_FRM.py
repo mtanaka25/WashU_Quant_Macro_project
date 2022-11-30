@@ -6,10 +6,10 @@ from ..tools import find_nearest_idx
 
 @njit(types.Tuple((f8[:,:,:], f8[:,:,:], f8[:,:,:], f8[:,:,:], f8[:,:,:], i8[:,:,:], i8[:,:,:], i8[:,:,:], i8[:,:,:], b1))
       (f8[:], f8[:,:], f8[:], f8[:,:], f8[:], f8, f8, f8, f8, f8, f8, f8, f8, f8,
-       f8, f8, f8, f8, f8, f8, f8, i8, f8))
+       f8, f8, f8, f8, f8, f8, f8, f8, i8, f8))
 def value_func_iter(z_grid, trans_prob_z, x_grid, trans_prob_x, a_grid,
                     beta, alpha, sigma, gamma, d, ph, h_star, h_eps, c_d,
-                    c_hat_d, delta, a_d_max, r, theta, kappaH, kappaN, max_iter, tol):
+                    c_hat_d, delta, a_d_max, lmbd, r, theta, kappaH, kappaN, max_iter, tol):
     # find the largest index satisfying a_d_max
     a_d_max_idx = find_nearest_idx(a_d_max, a_grid)
     if a_grid[a_d_max_idx] > a_d_max:
@@ -69,7 +69,7 @@ def value_func_iter(z_grid, trans_prob_z, x_grid, trans_prob_x, a_grid,
                     # Non-homeowners
                     V_NP_t[a_idx, z_idx, x_idx], a_star_NP[a_idx, z_idx, x_idx] = \
                         V_NP(z = z, a = a, a_prime_vec = a_grid,
-                             h = h_star, ph = ph, r = r, beta = beta,
+                             h = h_star, ph = ph, lmbd = lmbd, r = r, beta = beta,
                              alpha = alpha, sigma = sigma, gamma = gamma,
                              d = d, trans_prob_z_vec = trans_prob_z[z_idx, :],
                              trans_prob_x_vec = trans_prob_x_H[x_idx, :],

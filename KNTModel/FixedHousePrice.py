@@ -12,7 +12,7 @@ sns.set()
 class FixedHousePrice(KNTModel):
     def __init__(self, z_grid, trans_prob_z, x_grid, trans_prob_x,
                  beta, alpha, sigma, gamma, d, h_star, h_eps,
-                 c_d, c_hat_d, delta, a_d_max, r, theta, kappaH,
+                 c_d, c_hat_d, delta, a_d_max, lmbd, r, theta, kappaH,
                  kappaN, a_ranage, N_a, ph):
         super().__init__(z_grid = z_grid,
                          trans_prob_z = trans_prob_z,
@@ -29,6 +29,7 @@ class FixedHousePrice(KNTModel):
                          c_hat_d = c_hat_d,
                          delta = delta,
                          a_d_max = a_d_max,
+                         lmbd = lmbd,
                          r = r,
                          theta = theta,
                          kappaH = kappaH,
