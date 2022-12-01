@@ -194,7 +194,8 @@ def V_NN(z, a, a_prime_vec, h, r, beta, alpha, sigma, gamma,
         # return max and argmax
         return max(possible_values), np.argmax(possible_values)
 
-@njit(f8[:,:,:](f8[:,:,:], f8[:,:,:], f8))
+@njit([f8[:,:,:](f8[:,:,:], f8[:,:,:], f8),
+       f8[:,:,:,:](f8[:,:,:,:], f8[:,:,:,:], f8)])
 def V_H(V_HR, V_HD, kappa):
     return V_HD + kappa * np.log(np.exp((V_HR - V_HD)/kappa) + 1)
 
@@ -202,7 +203,8 @@ def V_H(V_HR, V_HD, kappa):
 def V_N(V_NP, V_NN, kappa):
     return V_NN + kappa * np.log(np.exp((V_NP - V_NN)/kappa) + 1)
 
-@njit(f8[:,:,:](f8[:,:,:], f8[:,:,:], f8))
+@njit([f8[:,:,:](f8[:,:,:], f8[:,:,:], f8),
+       f8[:,:,:,:](f8[:,:,:,:], f8[:,:,:,:], f8)])
 def default_prob(V_HR, V_HD, kappa):
     return 1 / (1 + np.exp((V_HR - V_HD)/kappa))
 

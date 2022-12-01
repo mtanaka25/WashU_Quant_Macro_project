@@ -1,7 +1,7 @@
 from .default_params import *
 from .FixedHousePrice import FixedHousePrice
-from .simplest_spec.value_func_iter_ARM import value_func_iter
-from .tools import StopWatch
+from .simplest_spec.ARM import *
+from .tools import StopWatch, plot_distribution
 
 class ARM_FixedHousePrice(FixedHousePrice):
     def __init__(self,
@@ -52,6 +52,7 @@ class ARM_FixedHousePrice(FixedHousePrice):
                          a_ranage = a_ranage,
                          N_a = N_a,
                          ph = ph)
+        self.isFRM = False
     
     def value_func_iter(self,
                         max_iter = max_iter_def,
@@ -88,3 +89,123 @@ class ARM_FixedHousePrice(FixedHousePrice):
         # Unpack and store the result
         self.ValueH, self.ValueN, self.rm, self.probD, self.probP,\
         self.a_star_HR_idx, self.a_star_HD_idx, self.a_star_NP_idx, self.a_star_NN_idx, _ = result
+    
+    def get_dist_under_specific_x(self,
+                                  fixed_x = 1.,
+                                  max_iter = max_iter_def,
+                                  tol = tol_def):
+        x1_idx = find_nearest_idx(fixed_x, self.x_grid)
+        print(f'Starting to calculate the distribution under x = {fixed_x}...',
+              flush = True)
+        stopwatch = StopWatch()
+        result = get_distribution_under_specific_x(
+            trans_prob_z = self.trans_prob_z,
+            default_prob = self.probD[:, :, x1_idx],
+            purchase_prob = self.probP[:, :, x1_idx],
+            a_star_HR_idx = self.a_star_HR_idx[:, :, x1_idx],
+            a_star_HD_idx = self.a_star_HD_idx[:, :, x1_idx],
+            a_star_NP_idx = self.a_star_NP_idx[:, :, x1_idx],
+            a_star_NN_idx = self.a_star_NN_idx[:, :, x1_idx],
+            max_iter = max_iter,
+            tol = tol)
+        stopwatch.stop()
+        if result[-1]==True:
+            print('Failed to obtain the stationary distribution. Try again with more max_iter.')
+        # Unpack and store the result
+        self.conditional_density_H, self.conditional_density_N, _ = result
+    
+    def get_stationary_dist_by_iter(self,
+                                    max_iter = max_iter_def,
+                                    tol = tol_def):
+        print('Starting to calculate the stationary distribution...',
+              flush = True)
+        stopwatch = StopWatch()
+        result = get_stationary_dist_by_iter(
+            trans_prob_z = self.trans_prob_z,
+            trans_prob_x = self.trans_prob_x,
+            default_prob = self.probD,
+            purchase_prob = self.probP,
+            a_star_HR_idx = self.a_star_HR_idx,
+            a_star_HD_idx = self.a_star_HD_idx,
+            a_star_NP_idx = self.a_star_NP_idx,
+            a_star_NN_idx = self.a_star_NN_idx,
+            max_iter = max_iter,
+            tol = tol)
+        stopwatch.stop()
+        if result[-1]==True:
+            print('Failed to obtain the stationary distribution. Try again with more max_iter.')
+        # Unpack and store the result
+        self.density_H, self.density_N, _ = result
+    
+    def get_stationary_dist_by_eig(self,
+                                   tol = 1E-5):
+        stopwatch = StopWatch()
+        trans_mat = get_joint_transition_matrix(
+            trans_prob_z = self.trans_prob_z,
+            trans_prob_x = self.trans_prob_x,
+            default_prob = self.probD,
+            purchase_prob = self.probP,
+            a_star_HR_idx = self.a_star_HR_idx,
+            a_star_HD_idx = self.a_star_HD_idx,
+            a_star_NP_idx = self.a_star_NP_idx,
+            a_star_NN_idx = self.a_star_NN_idx,
+            )
+        dist, eigs, count = get_stationary_dist_by_eig(trans_mat, tol)
+        if count == 1:
+            popH, popN = convert_flatten_dist_to_array(
+                dist, N_a = self.N_a, N_z = self.N_z, N_x = self.N_x)
+            self.density_H, self.density_N = popH, popN
+        else:
+            for i in range(count):
+                popH, popN = convert_flatten_dist_to_array(
+                    dist[:, i], N_a = self.N_a, N_z = self.N_z, N_x = self.N_x)
+                self.__dict__[f'density_H_{i+1}'] = popH
+                self.__dict__[f'density_N_{i+1}'] = popN
+        stopwatch.stop()
+        self.joint_transition_mat = trans_mat
+        self.eigenvalues = eigs
+        
+    def plot_stationary_distribution(self,
+                                     homeownership = 'H',
+                                     density_name = None,
+                                     fixed_axis = 2,
+                                     fixed_state_id = 0,
+                                     savefig = True,
+                                     zlim = [0, 1.05],
+                                     fname = 'stationary_dist.png'
+                                     ):
+        if homeownership == 'H':
+            density = self.density_H
+            title = 'Homeowners'
+        else:
+            density = self.density_N
+            title = 'Non-Homeowners'
+        if type(density_name) != type(None):
+            density = self.__dict__[density_name]
+            title = density_name
+        if fixed_axis == 0:
+            density2plot = density[fixed_state_id, :, :]
+            x, y = self.z_grid, self.x_grid
+            xlabel, ylabel = 'z', 'x'
+            title += ' ($a = a_{' + f'{fixed_state_id}' + '}$)'
+        elif fixed_axis == 1:
+            density2plot = density[:, fixed_state_id, :]
+            x, y = self.a_grid, self.x_grid
+            xlabel, ylabel = 'a', 'x'
+            title += ' ($z = z_{' + f'{fixed_state_id}' + '}$)'
+        else:
+            density2plot = density[:, :, fixed_state_id]
+            x, y = self.a_grid, self.z_grid
+            xlabel, ylabel = 'a', 'z'
+            title += ' ($x = x_{' + f'{fixed_state_id}' + '}$)'
+        plot_distribution(x = x,
+                          y = y,
+                          density = density2plot,
+                          xlabel = xlabel,
+                          ylabel = ylabel,
+                          zlabel = '',
+                          title = title,
+                          zlim = zlim,
+                          savefig = savefig,
+                          fname = fname
+                          )
