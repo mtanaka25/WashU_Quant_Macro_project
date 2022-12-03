@@ -2,9 +2,9 @@ import numpy as np
 from numba import njit, prange
 from numba import types, f8, i8, b1
 
-@njit(types.Tuple((f8[:, :], f8[:, :], b1))
-      (f8[:,:], f8[:,:], f8[:,:], i8[:,:],
-       i8[:,:], i8[:,:], i8[:,:], i8, f8))
+@njit(types.Tuple((f8[:, :, :], f8[:, :, :], b1))
+      (f8[:,:], f8[:,:,:], f8[:,:,:], i8[:,:,:],
+       i8[:,:,:], i8[:,:,:], i8[:,:,:], i8, i8, f8))
 def get_distribution_under_specific_x(trans_prob_z,
                                       default_prob,
                                       purchase_prob,
@@ -12,6 +12,7 @@ def get_distribution_under_specific_x(trans_prob_z,
                                       a_star_HD_idx,
                                       a_star_NP_idx,
                                       a_star_NN_idx,
+                                      fixed_x_idx,
                                       max_iter,
                                       tol):
     # The following is pure computational stuff (for efficient usage of memory)
@@ -19,10 +20,13 @@ def get_distribution_under_specific_x(trans_prob_z,
     # Get the number of grid points
     N_a = default_prob.shape[0]
     N_z = trans_prob_z.shape[0]
+    N_x = default_prob.shape[-1]
     # initialize the distribution (start with uniform)
     each_density = 1/ (2 * N_a * N_z)
-    pop_H = np.ones((N_a, N_z)) * each_density
-    pop_N = np.ones((N_a, N_z)) * each_density
+    pop_H = np.zeros((N_a, N_z, N_x))
+    pop_N = np.zeros((N_a, N_z, N_x))
+    pop_H[:, :, fixed_x_idx] = each_density
+    pop_N[:, :, fixed_x_idx] = each_density
     # initialize the while loop
     diff, iteration = tol +1., 0
     while (iteration < max_iter) & (diff > tol):
@@ -35,13 +39,18 @@ def get_distribution_under_specific_x(trans_prob_z,
         H_to_N = (default_prob * pop_H_pre) @ trans_prob_z
         N_to_H = (purchase_prob * pop_N_pre) @ trans_prob_z
         N_to_N = ((1 - purchase_prob) * pop_N_pre) @ trans_prob_z
-        # applying the optimal asset holdings
-        for a_idx in prange(N_a):
-            for z_idx in prange(N_z):
-                pop_H[a_star_HR_idx[a_idx, z_idx], z_idx] += H_to_H[a_idx, z_idx]
-                pop_N[a_star_HD_idx[a_idx, z_idx], z_idx] += H_to_N[a_idx, z_idx]
-                pop_H[a_star_NP_idx[a_idx, z_idx], z_idx] += N_to_H[a_idx, z_idx]
-                pop_N[a_star_NN_idx[a_idx, z_idx], z_idx] += N_to_N[a_idx, z_idx]
+        for zp_idx in prange(N_z):
+            for a_idx in prange(N_a):
+                for z_idx in prange(N_z):
+                    H_pre = pop_H_pre[a_idx, z_idx, fixed_x_idx]
+                    N_pre = pop_N_pre[a_idx, z_idx, fixed_x_idx]
+                    Pz = trans_prob_z[z_idx, zp_idx]
+                    Pd = Pd = default_prob[a_idx, z_idx, fixed_x_idx]
+                    Pp = purchase_prob[a_idx, z_idx, fixed_x_idx]
+                    pop_H[a_star_HR_idx[a_idx, z_idx, fixed_x_idx], zp_idx, fixed_x_idx] += (1-Pd) * Pz * H_pre
+                    pop_N[a_star_HD_idx[a_idx, z_idx, fixed_x_idx], zp_idx, fixed_x_idx] += Pd * Pz * H_pre
+                    pop_H[a_star_NP_idx[a_idx, z_idx, fixed_x_idx], zp_idx, fixed_x_idx] += Pp * Pz * N_pre
+                    pop_N[a_star_NN_idx[a_idx, z_idx, fixed_x_idx], zp_idx, fixed_x_idx] += (1-Pp) * Pz * N_pre
         # Convergence check
         diff_pop_H = max(np.abs(pop_H - pop_H_pre).flatten())
         diff_pop_N = max(np.abs(pop_N - pop_N_pre).flatten())
