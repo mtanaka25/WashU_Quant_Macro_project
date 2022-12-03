@@ -40,7 +40,7 @@ def get_distribution_under_specific_x(trans_prob_z,
                     H_pre = pop_H_pre[a_idx, z_idx, fixed_x_idx]
                     N_pre = pop_N_pre[a_idx, z_idx, fixed_x_idx]
                     Pz = trans_prob_z[z_idx, zp_idx]
-                    Pd = Pd = default_prob[a_idx, z_idx, fixed_x_idx]
+                    Pd = default_prob[a_idx, z_idx, fixed_x_idx]
                     Pp = purchase_prob[a_idx, z_idx, fixed_x_idx]
                     pop_H[a_star_HR_idx[a_idx, z_idx, fixed_x_idx], zp_idx, fixed_x_idx] += (1-Pd) * Pz * H_pre
                     pop_N[a_star_HD_idx[a_idx, z_idx, fixed_x_idx], zp_idx, fixed_x_idx] += Pd * Pz * H_pre
