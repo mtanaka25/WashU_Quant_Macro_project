@@ -246,3 +246,55 @@ class FRM_FixedHousePrice(FixedHousePrice):
                           savefig = savefig,
                           fname = fname
                           )
+    
+    def x_shock_simulation(self,
+                           pre_shock_x_idx,
+                           x_idx_path,
+                           max_iter = max_iter_def,
+                           tol = tol_def):
+        init_dist_H, init_dist_N, flag = get_distribution_under_specific_x(
+                                            trans_prob_z = self.trans_prob_z,
+                                            default_prob = self.probD,
+                                            purchase_prob = self.probP,
+                                            a_star_HR_idx = self.a_star_HR_idx,
+                                            a_star_HD_idx = self.a_star_HD_idx,
+                                            a_star_NP_idx = self.a_star_NP_idx,
+                                            a_star_NN_idx = self.a_star_NN_idx,
+                                            fixed_x_idx = pre_shock_x_idx,
+                                            max_iter = max_iter,
+                                            tol = tol)
+        if flag==True:
+            print(f'Failed to obtain the distribution under x_{pre_shock_x_idx}. Try again with more max_iter.')
+        irf_dist_H, irf_dist_N = x_shock_simulation(
+                                            init_dist_H = init_dist_H,
+                                            init_dist_N = init_dist_N,
+                                            x_idx_path = x_idx_path,
+                                            trans_prob_z = self.trans_prob_z,
+                                            default_prob = self.probD,
+                                            purchase_prob = self.probP,
+                                            a_star_HR_idx = self.a_star_HR_idx,
+                                            a_star_HD_idx = self.a_star_HD_idx,
+                                            a_star_NP_idx = self.a_star_NP_idx,
+                                            a_star_NN_idx = self.a_star_NN_idx
+                                            )
+        H_share_vec, ave_a_vec, ave_rm_vec, ave_Pd_vec, ave_Pp_vec = \
+            calc_aggregate_irfs(irf_dist_H = irf_dist_H,
+                                irf_dist_N = irf_dist_N,
+                                a_grid = self.a_grid,
+                                rm = self.rm,
+                                default_prob = self.probD,
+                                purchase_prob = self.probP,
+                                )
+        gini_a_vec, gini_rm_vec, gini_Pd_vec, gini_Pp_vec = \
+            calc_inequality_irfs(irf_dist_H = irf_dist_H,
+                                 irf_dist_N = irf_dist_N,
+                                 a_grid = self.a_grid,
+                                 rm = self.rm,
+                                 default_prob = self.probD,
+                                 purchase_prob = self.probP,
+                                 )
+        self.irf_dist_H, self.irf_dist_N = irf_dist_H, irf_dist_N
+        self.H_share_vec, self.ave_a_vec, self.ave_rm_vec = H_share_vec, ave_a_vec, ave_rm_vec
+        self.ave_Pd_vec, self.ave_Pp_vec =  ave_Pd_vec, ave_Pp_vec
+        self.gini_a_vec, self.gini_rm_vec = gini_a_vec, gini_rm_vec
+        self.gini_Pd_vec, self.gini_Pp_vec =  gini_Pd_vec, gini_Pp_vec

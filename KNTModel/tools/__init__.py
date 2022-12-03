@@ -3,3 +3,4 @@ from .StopWatch import *
 from .AR1_process import *
 from .multiple_line_plot import *
 from .plot_distribution import *
+from .inequality_indices import *
