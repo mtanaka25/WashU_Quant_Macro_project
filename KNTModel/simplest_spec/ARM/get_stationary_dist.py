@@ -34,11 +34,6 @@ def get_distribution_under_specific_x(trans_prob_z,
         # reset the updated density
         pop_H *= 0.
         pop_N *= 0.
-        # draw z' and the Gumbel shock
-        H_to_H = ((1 - default_prob) * pop_H_pre) @ trans_prob_z
-        H_to_N = (default_prob * pop_H_pre) @ trans_prob_z
-        N_to_H = (purchase_prob * pop_N_pre) @ trans_prob_z
-        N_to_N = ((1 - purchase_prob) * pop_N_pre) @ trans_prob_z
         for zp_idx in prange(N_z):
             for a_idx in prange(N_a):
                 for z_idx in prange(N_z):
