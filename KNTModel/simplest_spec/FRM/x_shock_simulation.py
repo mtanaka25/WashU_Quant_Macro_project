@@ -3,9 +3,9 @@ from ...tools import gini_index
 from numba import njit, prange
 from numba import types, f8, i8
 
-# @njit(types.Tuple((f8[:,:,:,:,:], f8[:,:,:,:]))
-#       (f8[:,:,:,:], f8[:,:,:], i8[:], f8[:,:], f8[:,:,:,:], f8[:,:,:],
-#        i8[:,:,:,:], i8[:,:,:,:], i8[:,:,:], i8[:,:,:]))
+@njit(types.Tuple((f8[:,:,:,:,:], f8[:,:,:,:]))
+      (f8[:,:,:,:], f8[:,:,:], i8[:], f8[:,:], f8[:,:,:,:], f8[:,:,:],
+       i8[:,:,:,:], i8[:,:,:,:], i8[:,:,:], i8[:,:,:]))
 def x_shock_simulation(init_dist_H,
                        init_dist_N,
                        x_idx_path,
@@ -109,7 +109,7 @@ def calc_aggregate_irfs(irf_dist_H,
     ave_Pp_vec = np.zeros((T, ))
     # Calculation
     for t in range(T):
-        H_share_vec[t] = np.sum(irf_dist_H[:, :, :, t])
+        H_share_vec[t] = np.sum(irf_dist_H[:, :, :, :, t])
         ave_a_vec[t] = population_mean(a_arrayH, a_arrayN, irf_dist_H[:, :, :, :, t], irf_dist_N[:, :, :, t])
         ave_rm_vec[t] = group_mean(rm, irf_dist_H[:, :, :, :, t])
         ave_Pd_vec[t] = group_mean(default_prob, irf_dist_H[:, :, :, :, t])
