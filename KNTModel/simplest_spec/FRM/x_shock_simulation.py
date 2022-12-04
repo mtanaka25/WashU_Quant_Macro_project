@@ -3,9 +3,9 @@ from ...tools import gini_index
 from numba import njit, prange
 from numba import types, f8, i8
 
-@njit(types.Tuple((f8[:,:,:,:,:], f8[:,:,:,:]))
-      (f8[:,:,:,:], f8[:,:,:], i8[:], f8[:,:], f8[:,:,:,:], f8[:,:,:],
-       i8[:,:,:,:], i8[:,:,:,:], i8[:,:,:], i8[:,:,:]))
+# @njit(types.Tuple((f8[:,:,:,:,:], f8[:,:,:,:]))
+#       (f8[:,:,:,:], f8[:,:,:], i8[:], f8[:,:], f8[:,:,:,:], f8[:,:,:],
+#        i8[:,:,:,:], i8[:,:,:,:], i8[:,:,:], i8[:,:,:]))
 def x_shock_simulation(init_dist_H,
                        init_dist_N,
                        x_idx_path,
@@ -39,9 +39,9 @@ def x_shock_simulation(init_dist_H,
                         Pp = purchase_prob[a_pre_idx, z_pre_idx, x_pre_idx]
                         irf_dist_H[a_star_NP_idx[a_pre_idx, z_pre_idx, x_pre_idx], zt_idx, xt_idx, xt_idx, t+1] += Pp * Pz * N_pre
                         irf_dist_N[a_star_NN_idx[a_pre_idx, z_pre_idx, x_pre_idx], zt_idx, xt_idx, t+1] += (1-Pp) * Pz * N_pre
-                        for x2_idx in prange(N_x):
-                            H_pre = irf_dist_H[a_pre_idx, z_pre_idx, x_pre_idx, N_x, t]
-                            Pd = default_prob[a_pre_idx, z_pre_idx, x_pre_idx, N_x]
+                        for x2_idx in range(N_x):
+                            H_pre = irf_dist_H[a_pre_idx, z_pre_idx, x_pre_idx, x2_idx, t]
+                            Pd = default_prob[a_pre_idx, z_pre_idx, x_pre_idx, x2_idx]
                             irf_dist_H[a_star_HR_idx[a_pre_idx, z_pre_idx, x_pre_idx, x2_idx], zt_idx, xt_idx, x2_idx, t+1] += (1-Pd) * Pz * H_pre
                             irf_dist_N[a_star_HD_idx[a_pre_idx, z_pre_idx, x_pre_idx, x2_idx], zt_idx, xt_idx, t+1] += Pd * Pz * H_pre
     return irf_dist_H, irf_dist_N
