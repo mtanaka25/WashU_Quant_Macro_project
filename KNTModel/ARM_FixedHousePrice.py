@@ -215,19 +215,18 @@ class ARM_FixedHousePrice(FixedHousePrice):
                            x_idx_path,
                            max_iter = max_iter_def,
                            tol = tol_def):
-        init_dist_H, init_dist_N, flag = get_distribution_under_specific_x(
-                                            trans_prob_z = self.trans_prob_z,
-                                            default_prob = self.probD,
-                                            purchase_prob = self.probP,
-                                            a_star_HR_idx = self.a_star_HR_idx,
-                                            a_star_HD_idx = self.a_star_HD_idx,
-                                            a_star_NP_idx = self.a_star_NP_idx,
-                                            a_star_NN_idx = self.a_star_NN_idx,
-                                            fixed_x_idx = pre_shock_x_idx,
-                                            max_iter = max_iter,
-                                            tol = tol)
-        if flag==True:
-            print(f'Failed to obtain the distribution under x_{pre_shock_x_idx}. Try again with more max_iter.')
+        # Prepare initial distributions for simulation
+        # Prepare arrays
+        init_dist_H = np.zeros((self.N_a, self.N_z, self.N_x))
+        init_dist_N = np.zeros((self.N_a, self.N_z, self.N_x))
+        # Take the distribution under the given x from the stationaty distribution
+        init_dist_H[:, :, pre_shock_x_idx] = self.density_H[:, :, pre_shock_x_idx]
+        init_dist_N[:, :, pre_shock_x_idx] = self.density_N[:, :, pre_shock_x_idx]
+        # Normalize them
+        total_mass = np.sum([np.sum(init_dist_H), np.sum(init_dist_N)])
+        init_dist_H = init_dist_H / total_mass
+        init_dist_N = init_dist_N / total_mass
+        # Run shock simulation
         irf_dist_H, irf_dist_N = x_shock_simulation(
                                             init_dist_H = init_dist_H,
                                             init_dist_N = init_dist_N,
@@ -240,6 +239,7 @@ class ARM_FixedHousePrice(FixedHousePrice):
                                             a_star_NP_idx = self.a_star_NP_idx,
                                             a_star_NN_idx = self.a_star_NN_idx
                                             )
+        # Calculate the responses of several aggregate statistics
         H_share_vec, ave_a_vec, ave_rm_vec, ave_Pd_vec, ave_Pp_vec = \
             calc_aggregate_irfs(irf_dist_H = irf_dist_H,
                                 irf_dist_N = irf_dist_N,
@@ -248,6 +248,7 @@ class ARM_FixedHousePrice(FixedHousePrice):
                                 default_prob = self.probD,
                                 purchase_prob = self.probP,
                                 )
+        # Calculate the responses of GIni indices for several variables
         gini_a_vec, gini_rm_vec, gini_Pd_vec, gini_Pp_vec = \
             calc_inequality_irfs(irf_dist_H = irf_dist_H,
                                  irf_dist_N = irf_dist_N,
