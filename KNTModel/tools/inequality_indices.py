@@ -21,7 +21,7 @@ def lorenz_curve(fx, x_dist):
     lorenz_curve = np.zeros((2, N+1))
     for n in prange(N):
         lorenz_curve[0, n+1] = cum_N_share[n]
-        lorenz_curve[0, n+1] = cum_fx_share[n]
+        lorenz_curve[1, n+1] = cum_fx_share[n]
     return lorenz_curve
 
 @njit(f8(f8[:],f8[:]))

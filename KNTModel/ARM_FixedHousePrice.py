@@ -222,6 +222,8 @@ class ARM_FixedHousePrice(FixedHousePrice):
         # Take the distribution under the given x from the stationaty distribution
         init_dist_H[:, :, pre_shock_x_idx] = self.density_H[:, :, pre_shock_x_idx]
         init_dist_N[:, :, pre_shock_x_idx] = self.density_N[:, :, pre_shock_x_idx]
+        init_dist_H[init_dist_H < tol] = 0.
+        init_dist_N[init_dist_N < tol] = 0.
         # Normalize them
         total_mass = np.sum([np.sum(init_dist_H), np.sum(init_dist_N)])
         init_dist_H = init_dist_H / total_mass

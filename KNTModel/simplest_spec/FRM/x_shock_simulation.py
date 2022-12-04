@@ -1,11 +1,15 @@
 import numpy as np
 from ...tools import gini_index
 from numba import njit, prange
-from numba import types, f8, i8
+from numba import types, f8, i8, i4
 
-@njit(types.Tuple((f8[:,:,:,:,:], f8[:,:,:,:]))
+@njit([types.Tuple((f8[:,:,:,:,:], f8[:,:,:,:]))
       (f8[:,:,:,:], f8[:,:,:], i8[:], f8[:,:], f8[:,:,:,:], f8[:,:,:],
-       i8[:,:,:,:], i8[:,:,:,:], i8[:,:,:], i8[:,:,:]))
+       i8[:,:,:,:], i8[:,:,:,:], i8[:,:,:], i8[:,:,:]),
+      types.Tuple((f8[:,:,:,:,:], f8[:,:,:,:]))
+      (f8[:,:,:,:], f8[:,:,:], i4[:], f8[:,:], f8[:,:,:,:], f8[:,:,:],
+       i8[:,:,:,:], i8[:,:,:,:], i8[:,:,:], i8[:,:,:])
+      ])
 def x_shock_simulation(init_dist_H,
                        init_dist_N,
                        x_idx_path,
@@ -51,37 +55,13 @@ def population_mean(x_H,
                     x_N,
                     distribution_H,
                     distribution_N):
-    ave = 0.
-    N_a, N_z, N_x = distribution_N.shape
-    for a_idx in range(N_a):
-        for z_idx in range(N_z):
-            for x_idx in range(N_x):
-                ave += x_N[a_idx, z_idx, x_idx] * distribution_N[a_idx, z_idx, x_idx]
-                for x2_idx in range(N_x):
-                    ave += x_H[a_idx, z_idx, x_idx, x2_idx] * distribution_H[a_idx, z_idx, x_idx, x2_idx]
-    return ave
+    return np.sum(x_H * distribution_H) + np.sum(x_N * distribution_N)
 
 @njit(
     [f8(f8[:,:,:], f8[:,:,:]),f8(f8[:,:,:,:], f8[:,:,:,:])]
     )
 def group_mean(x, distribution):
-    dim = x.ndim
-    ave = 0.
-    total = np.sum(distribution)
-    if dim == 3:
-        N_a, N_z, N_x = distribution.shape
-        for a_idx in range(N_a):
-            for z_idx in range(N_z):
-                for x_idx in range(N_x):
-                    ave += x[a_idx, z_idx, x_idx] * distribution[a_idx, z_idx, x_idx] / total
-    else:
-        N_a, N_z, N_x, _ = distribution.shape
-        for a_idx in range(N_a):
-            for z_idx in range(N_z):
-                for x_idx in range(N_x):
-                    for x2_idx in range(N_x):
-                        ave += x[a_idx, z_idx, x_idx, x2_idx] * distribution[a_idx, z_idx, x_idx, x2_idx] / total
-    return ave
+    return np.sum(x * distribution) / np.sum(distribution)
 
 @njit(types.Tuple((f8[:], f8[:], f8[:], f8[:], f8[:]))
       (f8[:,:,:,:,:], f8[:,:,:,:], f8[:], f8[:,:,:,:], f8[:,:,:,:], f8[:,:,:]))

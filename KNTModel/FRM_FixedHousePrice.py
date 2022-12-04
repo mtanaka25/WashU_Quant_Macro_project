@@ -193,32 +193,32 @@ class FRM_FixedHousePrice(FixedHousePrice):
                 density2plot = density[fixed_state_id[0], fixed_state_id[1], :, :]
                 x, y = self.a_grid, self.x_grid
                 xlabel, ylabel = '$x$', '$\\bar{x}$'
-                title += ' ($a = a_{' + f'{fixed_state_id[0]}' + '}$ and $z = z_{' + f'{fixed_axis[1]}'+ '}$)'
+                title += ' ($a = a_{' + f'{fixed_state_id[0]}' + '}$ and $z = z_{' + f'{fixed_state_id[1]}'+ '}$)'
             elif fixed_axis == (0, 2):
                 density2plot = density[fixed_state_id[0], :, fixed_state_id[1], :]
                 x, y = self.z_grid, self.x_grid
                 xlabel, ylabel = '$z$', '$\\bar{x}$'
-                title += ' ($a = a_{' + f'{fixed_state_id[0]}' + '}$ and $x = x_{' + f'{fixed_axis[1]}'+ '}$)'
-            elif fixed_axis == (0, 3) or (0, -1):
+                title += ' ($a = a_{' + f'{fixed_state_id[0]}' + '}$ and $x = x_{' + f'{fixed_state_id[1]}'+ '}$)'
+            elif fixed_axis == (0, 3):
                 density2plot = density[fixed_state_id[0], :, :, fixed_state_id[1]]
                 x, y = self.z_grid, self.x_grid
                 xlabel, ylabel = '$z$', '$x$'
-                title += ' ($a = a_{' + f'{fixed_state_id[0]}' + '}$ and $\\bar{x} = \\bar{x}_{' + f'{fixed_axis[1]}'+ '}$)'
+                title += ' ($a = a_{' + f'{fixed_state_id[0]}' + '}$ and $\\bar{x} = \\bar{x}_{' + f'{fixed_state_id[1]}'+ '}$)'
             elif fixed_axis == (1, 2):
-                density2plot = density[:, fixed_state_id[0],fixed_state_id[1], :]
+                density2plot = density[:, fixed_state_id[0], fixed_state_id[1], :]
                 x, y = self.a_grid, self.x_grid
                 xlabel, ylabel = '$a$', '$\\bar{x}$'
-                title += ' ($z = z_{' + f'{fixed_state_id[0]}' + '}$ and $x = x_{' + f'{fixed_axis[1]}'+ '}$)'
-            elif fixed_axis == (1, 3) or (1, -1):
+                title += ' ($z = z_{' + f'{fixed_state_id[0]}' + '}$ and $x = x_{' + f'{fixed_state_id[1]}'+ '}$)'
+            elif fixed_axis == (1, 3):
                 density2plot = density[:, fixed_state_id[0], :, fixed_state_id[1]]
                 x, y = self.a_grid, self.x_grid
                 xlabel, ylabel = '$a$', '$x$'
-                title += ' ($z = z_{' + f'{fixed_state_id[0]}' + '}$ and $\\bar{x} = \\bar{x}_{' + f'{fixed_axis[1]}'+ '}$)'
+                title += ' ($z = z_{' + f'{fixed_state_id[0]}' + '}$ and $\\bar{x} = \\bar{x}_{' + f'{fixed_state_id[1]}'+ '}$)'
             else:
                 density2plot = density[:, :, fixed_state_id[0], fixed_state_id[1]]
-                x, y = self.a_grid, self.x_grid
+                x, y = self.a_grid, self.z_grid
                 xlabel, ylabel = '$a$', '$z$'
-                title += ' ($x = x_{' + f'{fixed_state_id[0]}' + '}$ and $\\bar{x} = \\bar{x}_{' + f'{fixed_axis[1]}'+ '}$)'
+                title += ' ($x = x_{' + f'{fixed_state_id[0]}' + '}$ and $\\bar{x} = \\bar{x}_{' + f'{fixed_state_id[1]}'+ '}$)'
         else:
             if fixed_axis == 0:
                 density2plot = density[fixed_state_id, :, :]
@@ -250,7 +250,6 @@ class FRM_FixedHousePrice(FixedHousePrice):
     def x_shock_simulation(self,
                            pre_shock_x_idx,
                            x_idx_path,
-                           max_iter = max_iter_def,
                            tol = tol_def):
         # Prepare initial distributions for simulation
         # Prepare arrays
@@ -259,6 +258,8 @@ class FRM_FixedHousePrice(FixedHousePrice):
         # Take the distribution under the given x from the stationaty distribution
         init_dist_H[:, :, pre_shock_x_idx, :] = self.density_H[:, :, pre_shock_x_idx, :]
         init_dist_N[:, :, pre_shock_x_idx] = self.density_N[:, :, pre_shock_x_idx]
+        init_dist_H[init_dist_H < tol] = 0.
+        init_dist_N[init_dist_N < tol] = 0.
         # Normalize them
         total_mass = np.sum([np.sum(init_dist_H), np.sum(init_dist_N)])
         init_dist_H = init_dist_H / total_mass

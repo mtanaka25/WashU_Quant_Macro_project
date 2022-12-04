@@ -326,7 +326,7 @@ class FixedHousePrice(KNTModel):
                     labels.append('$a_{' + f'{fixed_states[n][0]}' +'}$, $x_{'+ f'{fixed_states[n][1]}' +'}$, $\\bar{x}_{'+ f'{fixed_states[n][2]}' +'}$')
             elif axis == 2:
                 for n in range(N_lines):
-                    data2plot[n, :] = self.rm[fixed_states[n][0], fixed_states[n][1] :, fixed_states[n][2]]
+                    data2plot[n, :] = self.rm[fixed_states[n][0], fixed_states[n][1], :, fixed_states[n][2]]
                     labels.append('$a_{' + f'{fixed_states[n][0]}' +'}$, $x_{'+ f'{fixed_states[n][1]}' +'}$, $\\bar{x}_{'+ f'{fixed_states[n][2]}' +'}$')
             else:
                 for n in range(N_lines):
