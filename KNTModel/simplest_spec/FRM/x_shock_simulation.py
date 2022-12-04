@@ -37,7 +37,7 @@ def x_shock_simulation(init_dist_H,
                         N_pre = irf_dist_N[a_pre_idx, z_pre_idx, x_pre_idx, t]
                         Pz = trans_prob_z[z_pre_idx, zt_idx]
                         Pp = purchase_prob[a_pre_idx, z_pre_idx, x_pre_idx]
-                        irf_dist_H[a_star_NP_idx[a_pre_idx, z_pre_idx, x_pre_idx], zt_idx, xt_idx, t+1] += Pp * Pz * N_pre
+                        irf_dist_H[a_star_NP_idx[a_pre_idx, z_pre_idx, x_pre_idx], zt_idx, xt_idx, xt_idx, t+1] += Pp * Pz * N_pre
                         irf_dist_N[a_star_NN_idx[a_pre_idx, z_pre_idx, x_pre_idx], zt_idx, xt_idx, t+1] += (1-Pp) * Pz * N_pre
                         for x2_idx in prange(N_x):
                             H_pre = irf_dist_H[a_pre_idx, z_pre_idx, x_pre_idx, N_x, t]
